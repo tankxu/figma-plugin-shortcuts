@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Shortcuts</title>
+  <style>
+    :root {
+      --figma-color-bg: #ffffff;
+      --figma-color-bg-secondary: #f5f5f5;
+      --figma-color-bg-elevated: #ffffff;
+      --figma-color-bg-hover: #f5f5f5;
+      --figma-color-bg-pressed: #f5f5f5;
+      --figma-color-bg-brand: #0d99ff;
+      --figma-color-text: #000000E5;
+      --figma-color-text-secondary: #00000080;
+      --figma-color-text-tertiary: #b3b3b3;
+      --figma-color-text-onbrand: #ffffff;
+      --figma-color-text-tooltip: #ffffff;
+      --figma-color-border: #e6e6e6;
+      --figma-color-border-strong: #2c2c2c;
+      --figma-color-border-translucent: #0000001a;
+      --figma-color-border-success: #aff4c6;
+      --figma-color-border-warning: #ffe8a3;
+      --figma-color-border-warning-strong: #ffcd29;
+      --figma-color-border-brand: #bde3ff;
+      --figma-color-icon: #000000E5;
+      --figma-color-icon-secondary: #b3b3b3;
+      --figma-color-icon-tertiary: #d9d9d9;
+      --figma-color-icon-onbrand: #ffffff;
+      --figma-color-success: #14ae5c;
+      --figma-color-warning: #f24822;
+      --figma-color-bg-brand-hover: #007be5;
+      --figma-color-bg-brand-pressed: #007be5;
+      --figma-color-bg-brand-secondary: #0768cf;
+      --figma-color-bg-brand-tertiary: #e5f4ff;
+      --figma-color-bg-success-secondary: #008043;
+      --figma-color-bg-success-tertiary: #d5f7da;
+      --figma-color-bg-warning-secondary: #eba611;
+      --figma-color-bg-warning-tertiary: #fff1c2;
+      --figma-color-bg-tertiary: #e6e6e6;
+      --figma-color-bg-tooltip: #1e1e1e;
+      --figma-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --figma-font-family-mono: 'Roboto Mono', 'Monaco', 'Courier New', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--figma-font-family);
+      font-size: 11px;
+      color: var(--figma-color-text);
+      background: var(--figma-color-bg);
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    h2 {
+      font-size: 15px;
+      font-weight: 550;
+      line-height: 25px;
+      margin: 0;
+    }
+
+    p {
+      margin: 0;
+      font-size: 11px;
+    }
+
+    .container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .status-bar-container {
+      border-bottom: 1px solid var(--figma-color-border);
+      padding: 0;
+    }
+
+    .status-bar {
+      padding: 12px;
+      height: 120px;
+      background: var(--figma-color-bg-elevated);
+      border: 0.5px solid var(--figma-color-border);
+      text-align: center;
+      font-size: 14px;
+      line-height: 120%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .status-bar-container.hidden {
+      display: none;
+    }
+
+    .status-bar-title {
+      font-size: 18px;
+      font-weight: 550;
+      line-height: 120%;
+      margin: 0;
+    }
+
+    .status-bar.ready {
+      background: var(--figma-color-bg-success-tertiary);
+      color: var(--figma-color-bg-success-secondary);
+      border: 0.5px solid var(--figma-color-border-success);
+    }
+
+    .status-bar.listening {
+      background: var(--figma-color-bg-brand-tertiary);
+      color: var(--figma-color-bg-brand-secondary);
+      border: 0.5px solid var(--figma-color-border-brand);
+    }
+
+    .status-bar.executed {
+      background: var(--figma-color-bg-brand-tertiary);
+      color: var(--figma-color-bg-brand-secondary);
+      border: 0.5px solid var(--figma-color-border-brand);
+    }
+
+    .dots-animation {
+      display: inline-block;
+      width: 18px;
+      text-align: left;
+    }
+
+    .status-bar.ready .dots-animation::after {
+      content: "...";
+      animation: dotsContent 1s infinite;
+    }
+
+    @keyframes dotsContent {
+      0% {
+        content: ".";
+      }
+
+      33% {
+        content: "..";
+      }
+
+      66% {
+        content: "...";
+      }
+
+      100% {
+        content: ".";
+      }
+    }
+
+
+
+
+    .floating-status-bar {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      padding: 0 16px;
+      background: var(--figma-color-bg-elevated);
+      border: 1px solid var(--figma-color-border-brand);
+      border-radius: 5px;
+      text-align: center;
+      font-size: 11px;
+      z-index: 1000;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 2px 6px 0 rgba(0, 0, 0, 0.05);
+      display: none;
+      height: 84px;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .floating-status-bar.listening {
+      background: var(--figma-color-bg-brand-tertiary);
+      color: var(--figma-color-bg-brand-secondary);
+    }
+
+    .floating-status-bar-title {
+      font-size: 15px;
+      font-weight: 550;
+      line-height: 120%;
+      margin-bottom: 10px;
+    }
+
+    .floating-status-bar-description {
+      font-size: 11px;
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px 16px;
+      min-height: 0;
+      /* Ensure flex child can shrink */
+    }
+
+    .card {
+      background: var(--figma-color-bg-elevated);
+      border: 1px solid var(--figma-color-border);
+      border-radius: 5px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .card:last-child {
+      margin-bottom: 0;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      gap: 0;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 550;
+      line-height: 16px;
+      margin: 0;
+    }
+
+    .category-title {
+      font-size: 11px;
+      font-weight: 550;
+      line-height: 16px;
+      margin: 0;
+      color: var(--figma-color-text);
+      position: sticky;
+      top: 0;
+      background-color: var(--figma-color-bg);
+      padding: 8px 0;
+      z-index: 10;
+    }
+
+    .category-title:first-child {
+      margin-top: 0;
+    }
+
+    .shortcuts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .shortcuts-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .iconBtnSmall {
+      background: none;
+      border: none;
+      padding: 0;
+      border-radius: 5px;
+      transition: background-color 0.2s ease;
+    }
+
+    .iconBtnSmall:hover {
+      background: var(--figma-color-bg-hover);
+    }
+
+    .iconBtnSmall svg,
+    .iconBtnSmall svg * {
+      pointer-events: none;
+    }
+
+    .shortcut-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 6px 6px 10px;
+      background: var(--figma-color-bg);
+      border: 1px solid var(--figma-color-border-translucent);
+      border-radius: 5px;
+      font-size: 11px;
+      line-height: 130%;
+      transition: background-color 0.15s ease;
+      gap: 4px;
+      position: relative;
+    }
+
+    .shortcut-item .shortcut-name {
+      padding: 2px 0;
+    }
+
+    #mainPage .shortcut-item:hover {
+      background: var(--figma-color-bg-hover);
+    }
+
+    #mainPage .shortcut-item:hover .key-text {
+      background: var(--figma-color-bg);
+    }
+
+    #mainPage .shortcut-item:hover .key-text.listening {
+      background: var(--figma-color-bg-brand);
+    }
+
+    #mainPage .tips {
+      font-size: 11px;
+      color: var(--figma-color-text-secondary);
+      margin: 8px 0;
+      text-align: left;
+      background-color: var(--figma-color-bg-secondary);
+      padding: 6px 10px;
+      border-radius: 5px;
+      width: fit-content;
+      line-height: 130%;
+    }
+    
+
+    /* Custom action styling */
+    .shortcut-item.custom-action {
+      border-left: 3px solid var(--figma-color-bg-brand);
+    }
+
+    .shortcut-item.custom-action .shortcut-name::before {
+      content: "⚡ ";
+      color: var(--figma-color-bg-brand);
+      font-size: 10px;
+    }
+
+    /* Custom action styling in config page */
+    #configPage .shortcut-item.custom-action {
+      border-left: 3px solid var(--figma-color-bg-brand);
+    }
+
+    #configPage .shortcut-item.custom-action .shortcut-name::before {
+      content: "⚡ ";
+      color: var(--figma-color-bg-brand);
+      font-size: 10px;
+    }
+
+    /* Shortcut conflict styling */
+    .shortcut-item.conflict {
+      border: 1px solid var(--figma-color-border-warning-strong);
+      position: relative;
+    }
+
+    /* Tooltip styles */
+    .tooltip {
+      position: absolute;
+      background: var(--figma-color-bg-tooltip);
+      color: var(--figma-color-text-tooltip);
+      border: 1px solid var(--figma-color-border);
+      border-radius: 11px;
+      padding: 12px;
+      font-size: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      width: calc(100% - 24px);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-bottom: 4px;
+      height: fit-content;
+      line-height: 150%;
+      text-align: center;
+      font-weight: 450;
+    }
+
+    .tooltip.show {
+      opacity: 1;
+    }
+
+    .shortcut-name {
+      color: var(--figma-color-text);
+      font-weight: 500;
+    }
+
+    .shortcut-keys {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .key-text {
+      background: var(--figma-color-bg-secondary);
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 450;
+      color: var(--figma-color-text);
+      min-width: 16px;
+      text-align: center;
+    }
+
+    .key-text.listening {
+      background: var(--figma-color-bg-brand);
+      color: var(--figma-color-text-onbrand);
+    }
+
+    .footer {
+      padding: 8px 12px;
+      border-top: 1px solid var(--figma-color-border);
+    }
+
+    .button {
+      padding: 0 12px;
+      background: var(--figma-color-bg-brand);
+      color: var(--figma-color-text-onbrand);
+      border: none;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 550;
+      transition: all 0.1s ease;
+      height: 32px;
+    }
+
+    .button:hover {
+      background: var(--figma-color-bg-brand-hover);
+    }
+
+    .button:active {
+      background: var(--figma-color-bg-brand-pressed);
+    }
+
+    .button.secondary {
+      background: var(--figma-color-bg);
+      color: var(--figma-color-text);
+      border: 1px solid var(--figma-color-border);
+    }
+
+    .button.secondary:hover {
+      background: var(--figma-color-bg-hover);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--figma-color-border);
+      position: relative;
+    }
+
+    .header h2 {
+      margin: 0;
+      color: var(--figma-color-text);
+      text-align: center;
+      flex: 1;
+    }
+
+    .back-button {
+      position: absolute;
+      border: none;
+      padding: 4px;
+      color: var(--figma-color-icon);
+      width: 28px;
+      height: 28px;
+      border-radius: 5px;
+      transition: opacity 0.2s ease;
+      transition: all 0.2s ease;
+      background-color: var(--figma-color-bg);
+    }
+
+    .back-button:hover {
+      opacity: 1;
+      background-color: var(--figma-color-bg-hover);
+    }
+
+    .tabs-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      height: 40px;
+      border-bottom: 1px solid var(--figma-color-border);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .tab {
+      padding: 0 8px;
+      height: 24px;
+      background: var(--figma-color-bg);
+      border: none;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 550;
+      color: var(--figma-color-text-secondary);
+      transition: all 0.1s ease;
+    }
+
+    .tab.active {
+      color: var(--figma-color-text);
+      background: var(--figma-color-bg-secondary);
+    }
+
+    .tab:hover {
+      background: var(--figma-color-bg-hover);
+    }
+
+    .config-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 8px 16px 16px;
+    }
+
+    .tab-content {
+      display: none;
+      padding: 0;
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    #configPage .content {
+      flex: 1;
+      padding: 0px;
+      background-color: var(--figma-color-bg);
+      min-height: 0;
+      /* Ensure flex child can shrink */
+      display: flex;
+      flex-direction: column;
+    }
+
+    #addCustomPage .content {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+      /* Ensure flex child can shrink */
+    }
+
+    .config-item {
+      margin-bottom: 4px;
+    }
+
+    .config-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .shortcut-button {
+      padding: 4px 8px;
+      background: var(--figma-color-bg-secondary);
+      border-radius: 5px;
+      border: none;
+      font-size: 11px;
+      min-width: 80px;
+      text-align: center;
+      color: var(--figma-color-text-secondary);
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .config-item .shortcut-button.listening {
+      background: var(--figma-color-bg-brand);
+      color: var(--figma-color-text-onbrand);
+      padding: 4px 8px;
+    }
+
+    .shortcut-button.listening .key-text {
+      display: none;
+    }
+
+    .shortcut-button.has-shortcut {
+      background: transparent;
+      padding: 0;
+      min-width: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .shortcut-button.has-shortcut .key-text {
+      pointer-events: none;
+    }
+
+    .add-custom-action-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 16px auto;
+    }
+
+    .add-button {
+      width: auto;
+      padding: 8px 12px;
+      background-color: var(--figma-color-bg);
+      border: 1px solid var(--figma-color-border-translucent);
+      border-radius: 5px;
+      font-size: 11px;
+      color: var(--figma-color-text);
+      transition: all 0.1s ease;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 11px;
+      color: var(--figma-color-text);
+      font-weight: 500;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--figma-color-border);
+      border-radius: 5px;
+      font-size: 11px;
+      font-family: var(--figma-font-family);
+      background: var(--figma-color-bg);
+      color: var(--figma-color-text);
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--figma-color-bg-brand);
+    }
+
+    .form-textarea {
+      min-height: 80px;
+      resize: vertical;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 11px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .form-actions .button {
+      flex: 1;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 24px;
+      color: var(--figma-color-text-secondary);
+      font-size: 11px;
+    }
+
+    .tabs-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    .search-content {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      transition: all 0.2s ease;
+    }
+
+    .search-content.active {
+      display: flex;
+    }
+
+    .search-input-container {
+      position: relative;
+      flex: 1;
+      margin-right: 8px;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 24px;
+      padding: 8px 8px 8px 24px;
+      background: var(--figma-color-bg-secondary);
+      border: none;
+      border-radius: 5px;
+      font-size: 11px;
+      font-family: var(--figma-font-family);
+      color: var(--figma-color-text);
+      transition: all 0.2s ease;
+    }
+
+    .search-input:focus {
+      outline: 1px solid var(--figma-color-bg-brand);
+      background: var(--figma-color-bg);
+    }
+
+    .search-input::placeholder {
+      color: var(--figma-color-text-secondary);
+    }
+
+    .search-icon {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .search-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .close-search-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      border-radius: 5px;
+      transition: background-color 0.2s ease;
+    }
+
+    .close-search-btn:hover {
+      background: var(--figma-color-bg-hover);
+    }
+
+    .close-search-btn svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    #focusable {
+      position: absolute;
+      top: -1000px;
+      left: -1000px;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="floating-status-bar" id="floatingStatusBar">
+      <p class="floating-status-bar-title">Press keys to set shortcut</p>
+      <p class="floating-status-bar-description">Press ESC to cancel, DELETE to remove shortcut</p>
+    </div>
+
+    <!-- Main page -->
+    <div class="page active" id="mainPage">
+      <div class="status-bar-container" id="statusBar">
+        <div class="status-bar ready">
+          <p class="status-bar-title">Capturing Keys<span class="dots-animation"></span></p>
+          <p class="status-bar-description">Press shortcuts to run actions</p>
+        </div>
+      </div>
+      <div class="content">
+        <div class="shortcuts-list" id="shortcutsList">
+          <div class="empty-state">
+            <h2>No shortcuts configured yet</h2>
+            <button class="button" id="configureBtn" style="margin-top: 16px;">Configure Shortcuts</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuration page -->
+    <div class="page" id="configPage">
+      <div class="header">
+        <button class="back-button" id="backBtn"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+            viewBox="0 0 24 24">
+            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M20 12H4m0 0l6-6m-6 6l6 6" />
+          </svg></button>
+        <h2>Configure Shortcuts</h2>
+        <div></div>
+      </div>
+
+      <div class="tabs-container">
+        <div class="tabs-content">
+          <div class="tabs">
+            <button class="tab active" data-tab="default">Base Actions</button>
+            <button class="tab" data-tab="custom">Custom Actions</button>
+          </div>
+          <button class="iconBtnSmall" id="searchBtn">
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+              <path fill="var(--figma-color-icon)" fill-rule="evenodd"
+                d="M16 11.5a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0m-.956 4.206a5.5 5.5 0 1 1 .662-.662.5.5 0 0 1 .148.102l3 3a.5.5 0 1 1-.707.707l-3-3a.5.5 0 0 1-.103-.147"
+                clip-rule="evenodd">
+              </path>
+            </svg>
+          </button>
+        </div>
+        <div class="search-content">
+          <div class="search-input-container">
+            <div class="search-icon">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <path fill="var(--figma-color-icon)" fill-rule="evenodd"
+                  d="M16 11.5a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0m-.956 4.206a5.5 5.5 0 1 1 .662-.662.5.5 0 0 1 .148.102l3 3a.5.5 0 1 1-.707.707l-3-3a.5.5 0 0 1-.103-.147"
+                  clip-rule="evenodd">
+                </path>
+              </svg>
+            </div>
+            <input type="text" class="search-input" id="searchInput" placeholder="Find..." />
+          </div>
+          <button class="close-search-btn" id="closeSearchBtn">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+              <path fill="var(--figma-color-icon)" fill-rule="evenodd"
+                d="M17.354 6.646a.5.5 0 0 1 0 .708L12.707 12l4.647 4.646a.5.5 0 0 1-.708.708L12 12.707l-4.646 4.647a.5.5 0 0 1-.708-.708L11.293 12 6.646 7.354a.5.5 0 0 1 .708-.707L12 11.293l4.646-4.647a.5.5 0 0 1 .708 0"
+                clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- Default actions tab -->
+        <div class="tab-content active" id="defaultTab">
+          <div class="config-list" id="defaultConfigList">
+            <!-- Will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Custom actions tab -->
+        <div class="tab-content" id="customTab">
+          <div class="add-custom-action-container">
+            <button class="add-button" id="addCustomBtn">+ Add Custom Action</button>
+          </div>
+          <div class="config-list" id="customConfigList">
+            <!-- Will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add custom action page -->
+    <div class="page" id="addCustomPage">
+      <div class="header">
+        <button class="back-button" id="backToConfigBtn"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+            viewBox="0 0 24 24">
+            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M20 12H4m0 0l6-6m-6 6l6 6" />
+          </svg></button>
+        <h2>Add Custom Action</h2>
+        <div></div>
+      </div>
+
+      <div class="content">
+        <div class="form-group">
+          <label class="form-label">Action Name</label>
+          <input type="text" class="form-input" id="customActionName" placeholder="Enter action name">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Action Function</label>
+          <textarea class="form-input form-textarea" id="customActionFunction"
+            placeholder="// Example:&#10;// selection.forEach(node => {&#10;//   if ('cornerRadius' in node) {&#10;//     node.cornerRadius = 8;&#10;//   }&#10;// });"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Shortcut</label>
+          <button class="shortcut-button" id="customShortcutBtn">Set Shortcut</button>
+        </div>
+
+        <div class="form-actions">
+          <button class="button secondary" id="cancelCustomBtn">Cancel</button>
+          <button class="button" id="saveCustomBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden input for capturing keyboard events -->
+    <input type="text" id="focusable" tabindex="0">
+  </div>
+
+  <script>
+    // Global state
+    let currentPage = 'main';
+    let currentTab = 'default';
+    let shortcuts = {};
+    let customActions = [];
+    let defaultActions = {}; // Will be loaded from backend
+    let isListening = false;
+    let listeningElement = null;
+    let platform = 'mac'; // Will be detected
+    let pressedKeys = new Set();
+
+    // DOM elements
+    const statusBar = document.getElementById('statusBar');
+    const floatingStatusBar = document.getElementById('floatingStatusBar');
+    const focusable = document.getElementById('focusable');
+    const shortcutsList = document.getElementById('shortcutsList');
+    // const configureBtn = document.getElementById('configureBtn'); // Now handled dynamically
+    const backBtn = document.getElementById('backBtn');
+    const backToConfigBtn = document.getElementById('backToConfigBtn');
+    const addCustomBtn = document.getElementById('addCustomBtn');
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const pages = document.querySelectorAll('.page');
+
+
+
+    // Helper function to get action name
+    function getActionName(actionId) {
+      // Search in default actions
+      for (const category in defaultActions) {
+        if (defaultActions[category][actionId]) {
+          return defaultActions[category][actionId];
+        }
+      }
+
+      // Search in custom actions
+      const customAction = customActions.find(a => a.id === actionId);
+      if (customAction) {
+        return customAction.name;
+      }
+
+      return actionId;
+    }
+
+    // Helper function to check if action is custom
+    function isCustomAction(actionId) {
+      return actionId.startsWith('custom_');
+    }
+
+    // Helper function to detect shortcut conflicts
+    function detectShortcutConflicts() {
+      const conflicts = {};
+      const shortcutToActions = {};
+
+      // Build a map of shortcuts to actions
+      for (const [action, shortcut] of Object.entries(shortcuts)) {
+        if (shortcut) {
+          if (!shortcutToActions[shortcut]) {
+            shortcutToActions[shortcut] = [];
+          }
+          shortcutToActions[shortcut].push(action);
+        }
+      }
+
+      // Find conflicts (shortcuts used by multiple actions)
+      for (const [shortcut, actions] of Object.entries(shortcutToActions)) {
+        if (actions.length > 1) {
+          for (const action of actions) {
+            conflicts[action] = actions.filter(a => a !== action);
+          }
+        }
+      }
+
+      return conflicts;
+    }
+
+    // Helper function to get conflict tooltip text
+    function getConflictTooltipText(action) {
+      const conflicts = detectShortcutConflicts();
+      const conflictingActions = conflicts[action];
+      
+      if (!conflictingActions || conflictingActions.length === 0) {
+        return null;
+      }
+
+      const shortcut = shortcuts[action];
+      const conflictNames = conflictingActions.map(conflictAction => getActionName(conflictAction));
+      
+      return `Shortcut conflict with: ${conflictNames.join(', ')}`;
+    }
+
+    // Platform detection
+    function detectPlatform() {
+      const userAgent = navigator.userAgent.toLowerCase();
+      if (userAgent.includes('mac')) {
+        platform = 'mac';
+      } else if (userAgent.includes('win')) {
+        platform = 'windows';
+      } else {
+        platform = 'linux';
+      }
+      document.body.className = `platform-${platform}`;
+    }
+
+    // Load data from main thread
+    function loadData() {
+      parent.postMessage({
+        pluginMessage: {
+          type: 'load-data'
+        }
+      }, '*');
+    }
+
+    // Save data to main thread
+    function saveData() {
+      parent.postMessage({
+        pluginMessage: {
+          type: 'save-data',
+          shortcuts: shortcuts,
+          customActions: customActions
+        }
+      }, '*');
+    }
+
+    // Initialize
+    function init() {
+      detectPlatform();
+      loadData();
+      setupEventListeners();
+      focusable.focus();
+    }
+
+    // Render shortcuts list
+    function renderShortcutsList() {
+      const hasShortcuts = Object.keys(shortcuts).length > 0;
+
+      if (!hasShortcuts) {
+        return;
+      }
+
+      const conflicts = detectShortcutConflicts();
+
+      let html = '';
+      html += `<div class="shortcuts-list-header">
+                <p class="section-title">Shortcuts</p>
+                <button class="iconBtnSmall" id="configureBtn"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="#000" d="M8.5 18a.5.5 0 0 0 .5-.5v-1.55a2.5 2.5 0 0 0 0-4.9V6.5a.5.5 0 0 0-1 0v4.55a2.501 2.501 0 0 0 0 4.9v1.55a.5.5 0 0 0 .5.5m7 0a.5.5 0 0 0 .5-.5v-4.55a2.501 2.501 0 0 0 0-4.9V6.5a.5.5 0 0 0-1 0v1.55a2.5 2.5 0 0 0 0 4.9v4.55a.5.5 0 0 0 .5.5m0-6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m-7 3a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"></path></svg></button>
+              </div>
+      `;
+      for (const [action, shortcut] of Object.entries(shortcuts)) {
+        const actionName = getActionName(action);
+        const isCustom = isCustomAction(action);
+        const hasConflict = conflicts[action] && conflicts[action].length > 0;
+        const customClass = isCustom ? ' custom-action' : '';
+        const conflictClass = hasConflict ? ' conflict' : '';
+        const tooltipText = hasConflict ? getConflictTooltipText(action) : '';
+        
+        html += `<div class="shortcut-item${customClass}${conflictClass}" data-action="${action}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
+                       <div class="shortcut-name">${actionName}</div>
+                       <div class="shortcut-keys">${renderShortcutKeys(shortcut)}</div>
+                   </div>
+                `;
+      }
+
+      // html += `<div class="tips">
+      //           <p>Tips: You can also click to run it. ⌘+Click to set the shortcut.</p>
+      //           </div>
+      //           `;
+      shortcutsList.innerHTML = html;
+    }
+
+    // Render shortcut keys with icons
+    function renderShortcutKeys(shortcut) {
+      const keys = shortcut.split('+');
+      let html = '';
+
+      keys.forEach((key, index) => {
+        const keyLower = key.toLowerCase();
+        if (keyLower === 'cmd' || keyLower === 'command') {
+          html += '<span class="key-text">⌘</span>';
+        } else if (keyLower === 'ctrl' || keyLower === 'control') {
+          html += `<span class="key-text">${platform === 'mac' ? '⌃' : 'Ctrl'}</span>`;
+        } else if (keyLower === 'alt' || keyLower === 'option') {
+          html += `<span class="key-text">${platform === 'mac' ? '⌥' : 'Alt'}</span>`;
+        } else if (keyLower === 'shift') {
+          html += '<span class="key-text">⇧</span>';
+        } else if (keyLower === 'win' || keyLower === 'windows') {
+          html += '<span class="key-text">⊞</span>';
+        } else if (keyLower === 'fn' || keyLower === 'function') {
+          html += `<span class="key-text">${platform === 'mac' ? 'fn' : 'Fn'}</span>`;
+        } else if (keyLower === 'capslock' || keyLower === 'caps') {
+          html += '<span class="key-text">⇪</span>';
+        } else {
+          html += `<span class="key-text">${key.toUpperCase()}</span>`;
+        }
+      });
+
+      return html;
+    }
+
+    // Render configuration list
+    function renderConfigList() {
+      const conflicts = detectShortcutConflicts();
+      
+      // Default actions - organized by categories in alphabetical order
+      let defaultHtml = '';
+
+      // Get categories and sort them alphabetically
+      const categories = Object.keys(defaultActions).sort();
+
+      categories.forEach(category => {
+        defaultHtml += `<h3 class="category-title">${category}</h3>`;
+
+        // Get actions in this category and sort them alphabetically by name
+        const actionsInCategory = Object.entries(defaultActions[category]).sort((a, b) => a[1].localeCompare(b[1]));
+
+        actionsInCategory.forEach(([action, name]) => {
+          const shortcut = shortcuts[action] || '';
+          const shortcutDisplay = shortcut ? renderShortcutKeys(shortcut) : 'Set Shortcut';
+          const hasShortcutClass = shortcut ? ' has-shortcut' : '';
+          const hasConflict = conflicts[action] && conflicts[action].length > 0;
+          const conflictClass = hasConflict ? ' conflict' : '';
+          const tooltipText = hasConflict ? getConflictTooltipText(action) : '';
+          
+          defaultHtml += `
+                        <div class="config-item shortcut-item${conflictClass}" data-action="${action}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
+                            <div class="shortcut-name" data-action="${action}">${name}</div>
+                            <button class="shortcut-button${hasShortcutClass}" data-action="${action}">${shortcutDisplay}</button>
+                        </div>
+                    `;
+        });
+      });
+
+      document.getElementById('defaultConfigList').innerHTML = defaultHtml;
+
+      // Custom actions
+      let customHtml = '';
+      customActions.forEach(action => {
+        const shortcut = shortcuts[action.id] || '';
+        const shortcutDisplay = shortcut ? renderShortcutKeys(shortcut) : 'Set Shortcut';
+        const hasShortcutClass = shortcut ? ' has-shortcut' : '';
+        const hasConflict = conflicts[action.id] && conflicts[action.id].length > 0;
+        const conflictClass = hasConflict ? ' conflict' : '';
+        const tooltipText = hasConflict ? getConflictTooltipText(action.id) : '';
+        
+        customHtml += `
+                    <div class="config-item shortcut-item custom-action${conflictClass}" data-action="${action.id}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
+                        <div class="shortcut-name" data-action="${action.id}">${action.name}</div>
+                        <button class="shortcut-button${hasShortcutClass}" data-action="${action.id}">${shortcutDisplay}</button>
+                    </div>
+                `;
+      });
+      document.getElementById('customConfigList').innerHTML = customHtml;
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+      // Page navigation
+      backBtn.addEventListener('click', () => showPage('main'));
+      backToConfigBtn.addEventListener('click', () => showPage('config'));
+      addCustomBtn.addEventListener('click', () => showPage('addCustom'));
+
+      // Tab switching
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const tabName = tab.dataset.tab;
+          switchTab(tabName);
+        });
+      });
+
+      // Event delegation for dynamic buttons
+      document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('shortcut-button')) {
+          startListening(e.target);
+        } else if (e.target.id === 'configureBtn') {
+          showPage('config');
+        } else if (e.target.closest('.shortcut-item') && currentPage === 'main') {
+          handleShortcutItemClick(e);
+        } else if (e.target.closest('.shortcut-item') && (e.metaKey || e.ctrlKey)) {
+          // Handle command+click on any shortcut item (both main page and config page)
+          e.preventDefault();
+          const shortcutItem = e.target.closest('.shortcut-item');
+          const button = shortcutItem.querySelector('.shortcut-button');
+          if (button) {
+            startListening(button);
+          }
+        }
+      });
+
+      // Search functionality
+      document.getElementById('searchBtn').addEventListener('click', toggleSearch);
+      document.getElementById('closeSearchBtn').addEventListener('click', toggleSearch);
+      document.getElementById('searchInput').addEventListener('input', handleSearchInput);
+
+      // Ensure search input can be focused
+      document.getElementById('searchInput').addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.target.focus();
+      });
+
+      // Allow clicking on search container to focus input
+      document.addEventListener('click', (e) => {
+        if (e.target.closest('.search-input-container')) {
+          e.preventDefault();
+          e.stopPropagation();
+          document.getElementById('searchInput').focus();
+        }
+      });
+
+      // Custom action form
+      document.getElementById('saveCustomBtn').addEventListener('click', saveCustomAction);
+      document.getElementById('cancelCustomBtn').addEventListener('click', () => showPage('config'));
+      
+      // Ensure form inputs can be focused on addCustom page
+      document.getElementById('customActionName').addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.target.focus();
+      });
+      
+      document.getElementById('customActionFunction').addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.target.focus();
+      });
+
+      // Keyboard events
+      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keyup', handleKeyUp);
+
+      // Focus management
+      document.addEventListener('click', (e) => {
+        // 只在首页且未在设置快捷键时自动 focus
+        const searchContent = document.querySelector('.search-content');
+        if (
+          currentPage === 'main' &&
+          !isListening &&
+          !searchContent.classList.contains('active')
+        ) {
+          focusable.focus();
+        }
+      });
+
+      window.addEventListener('blur', () => {
+        setTimeout(() => {
+          const searchContent = document.querySelector('.search-content');
+          if (
+            currentPage === 'main' &&
+            !isListening &&
+            !searchContent.classList.contains('active')
+          ) {
+            focusable.focus();
+          }
+        }, 10);
+      });
+
+      // Tooltip functionality
+      let tooltip = null;
+      let tooltipTimeout = null;
+
+      // Create tooltip element
+      function createTooltip() {
+        if (tooltip) return tooltip;
+        
+        tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        document.body.appendChild(tooltip);
+        return tooltip;
+      }
+
+      // Show tooltip
+      function showTooltip(element, text) {
+        if (!text) return;
+        
+        const tooltipEl = createTooltip();
+        tooltipEl.textContent = text;
+        tooltipEl.classList.add('show');
+        
+        // Position tooltip
+        const rect = element.getBoundingClientRect();
+        const tooltipRect = tooltipEl.getBoundingClientRect();
+        
+        // Adjust position if tooltip would go off screen
+        let left = rect.left + rect.width / 2;
+        if (left + tooltipRect.width / 2 > window.innerWidth) {
+          left = window.innerWidth - tooltipRect.width / 2 - 10;
+        } else if (left - tooltipRect.width / 2 < 0) {
+          left = tooltipRect.width / 2 + 10;
+        }
+        
+        tooltipEl.style.left = left + 'px';
+        tooltipEl.style.top = (rect.top - tooltipRect.height - 8) + 'px';
+      }
+
+      // Hide tooltip
+      function hideTooltip() {
+        if (tooltip) {
+          tooltip.classList.remove('show');
+        }
+        if (tooltipTimeout) {
+          clearTimeout(tooltipTimeout);
+          tooltipTimeout = null;
+        }
+      }
+
+      // Add tooltip event listeners
+      document.addEventListener('mouseover', (e) => {
+        const shortcutItem = e.target.closest('.shortcut-item.conflict');
+        if (shortcutItem && shortcutItem.dataset.tooltip) {
+          tooltipTimeout = setTimeout(() => {
+            showTooltip(shortcutItem, shortcutItem.dataset.tooltip);
+          }, 100); // Show tooltip after 200ms hover
+        }
+      });
+
+      document.addEventListener('mouseout', (e) => {
+        const shortcutItem = e.target.closest('.shortcut-item.conflict');
+        if (shortcutItem) {
+          hideTooltip();
+        }
+      });
+
+      // Hide tooltip when clicking or pressing keys
+      document.addEventListener('click', hideTooltip);
+      document.addEventListener('keydown', hideTooltip);
+    }
+
+    // Show page
+    function showPage(pageName) {
+      pages.forEach(page => page.classList.remove('active'));
+
+      switch (pageName) {
+        case 'main':
+          document.getElementById('mainPage').classList.add('active');
+          currentPage = 'main';
+          statusBar.classList.remove('hidden');
+          renderShortcutsList();
+          break;
+        case 'config':
+          document.getElementById('configPage').classList.add('active');
+          currentPage = 'config';
+          statusBar.classList.add('hidden');
+          renderConfigList();
+          break;
+        case 'addCustom':
+          document.getElementById('addCustomPage').classList.add('active');
+          currentPage = 'addCustom';
+          statusBar.classList.add('hidden');
+          clearCustomForm();
+          break;
+      }
+
+      setTimeout(() => {
+        const searchContent = document.querySelector('.search-content');
+        if (
+          pageName === 'main' &&
+          !isListening &&
+          !searchContent.classList.contains('active')
+        ) {
+          focusable.focus();
+        }
+      }, 100);
+    }
+
+    // Switch tab
+    function switchTab(tabName) {
+      tabs.forEach(tab => tab.classList.remove('active'));
+      tabContents.forEach(content => content.classList.remove('active'));
+
+      document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+      document.getElementById(`${tabName}Tab`).classList.add('active');
+
+      currentTab = tabName;
+    }
+
+    // Start listening for shortcut
+    function startListening(element) {
+      if (isListening) return;
+
+      isListening = true;
+      listeningElement = element;
+      element.innerHTML = 'Press keys...';
+      element.classList.add('listening');
+
+      // Clear pressed keys and reset status bars
+      pressedKeys.clear();
+      
+      // Show floating status bar with hint
+      floatingStatusBar.classList.add('listening');
+      floatingStatusBar.style.display = 'flex';
+      
+      // Reset floating status bar content
+      const floatingTitle = floatingStatusBar.querySelector('.floating-status-bar-title');
+      const floatingDesc = floatingStatusBar.querySelector('.floating-status-bar-description');
+      floatingTitle.textContent = 'Press keys to set shortcut';
+      floatingDesc.textContent = 'Press ESC to cancel, DELETE to remove shortcut';
+
+      focusable.focus();
+    }
+
+    // Stop listening
+    function stopListening(delay=false) {
+      if (!isListening) return;
+
+      isListening = false;
+      if (listeningElement) {
+        // Only try to remove class if it's a real DOM element
+        if (listeningElement.classList) {
+          listeningElement.classList.remove('listening');
+        }
+        listeningElement = null;
+      }
+
+      pressedKeys.clear();
+
+      // Hide floating status bar
+      if (delay) {
+        setTimeout(() => {
+          floatingStatusBar.style.display = 'none';
+          floatingStatusBar.classList.remove('listening');
+        }, 150);
+      } else {
+        floatingStatusBar.style.display = 'none';
+        floatingStatusBar.classList.remove('listening');
+      }
+    }
+
+    // Cancel listening (ESC pressed)
+    function cancelListening() {
+      if (!isListening || !listeningElement) return;
+
+      const action = listeningElement.dataset.action;
+      const currentShortcut = shortcuts[action];
+
+      // Restore original text only if it's a real button element
+      if (listeningElement.textContent !== undefined) {
+        listeningElement.innerHTML = currentShortcut ? renderShortcutKeys(currentShortcut) : 'Set Shortcut';
+        if (currentShortcut) {
+          listeningElement.classList.add('has-shortcut');
+        } else {
+          listeningElement.classList.remove('has-shortcut');
+        }
+      }
+
+      // If on main page, also restore the shortcut keys display
+      if (currentPage === 'main') {
+        const shortcutItem = document.querySelector(`#mainPage .shortcut-item[data-action="${action}"]`);
+        if (shortcutItem) {
+          const keysElement = shortcutItem.querySelector('.shortcut-keys');
+          if (keysElement) {
+            keysElement.innerHTML = currentShortcut ? renderShortcutKeys(currentShortcut) : '';
+          }
+        }
+      }
+
+      // Update status
+      updateStatus('Ready', 'ready');
+
+      stopListening();
+    }
+
+    // Delete shortcut (DELETE/BACKSPACE pressed)
+    function deleteShortcut() {
+      if (!isListening || !listeningElement) return;
+
+      const action = listeningElement.dataset.action;
+
+      // Remove shortcut
+      delete shortcuts[action];
+      saveData();
+
+      // Update button text only if it's a real button element
+      if (listeningElement.textContent !== undefined) {
+        listeningElement.innerHTML = 'Set Shortcut';
+        listeningElement.classList.remove('has-shortcut');
+      }
+
+      // If on main page, also clear the shortcut keys display
+      if (currentPage === 'main') {
+        const shortcutItem = document.querySelector(`#mainPage .shortcut-item[data-action="${action}"]`);
+        if (shortcutItem) {
+          const keysElement = shortcutItem.querySelector('.shortcut-keys');
+          if (keysElement) {
+            keysElement.innerHTML = '';
+          }
+        }
+      }
+
+      // Always update the shortcuts list
+      renderShortcutsList();
+      
+      // Update config list if on config page
+      if (currentPage === 'config') {
+        renderConfigList();
+      }
+
+      // Update status
+      const actionName = getActionName(action);
+      updateStatus(`Shortcut removed for: ${actionName}`, 'executed');
+      updateStatus('Ready', 'ready');
+
+      stopListening();
+    }
+
+    // Handle key down
+    function handleKeyDown(event) {
+      const key = event.key.toLowerCase();
+
+      // Don't handle keyboard events on addCustom page to allow form input
+      if (currentPage === 'addCustom' && !isListening) {
+        return;
+      }
+
+      // Handle listening state first (highest priority)
+      if (isListening) {
+        // Handle ESC to cancel shortcut configuration
+        if (key === 'escape') {
+          event.preventDefault();
+          cancelListening();
+          return;
+        }
+
+        // Handle DELETE to remove existing shortcut
+        if (key === 'delete' || key === 'backspace') {
+          event.preventDefault();
+          deleteShortcut();
+          return;
+        }
+
+        // Capture shortcut - track pressed keys
+        event.preventDefault();
+
+        // Add modifier keys
+        if (event.metaKey) pressedKeys.add('cmd');
+        if (event.ctrlKey) pressedKeys.add('ctrl');
+        if (event.altKey) pressedKeys.add('alt');
+        if (event.shiftKey) pressedKeys.add('shift');
+
+        // Add regular key
+        if (key.length === 1 && key.match(/[a-z0-9]/)) {
+          pressedKeys.add(key);
+        } else if (['space', 'enter', 'tab'].includes(key)) {
+          pressedKeys.add(key);
+        } else if (key.startsWith('arrow')) {
+          pressedKeys.add(key.replace('arrow', ''));
+        } else if (key.startsWith('f') && key.length <= 3) {
+          pressedKeys.add(key);
+        }
+
+        // Update status bars with current pressed keys
+        updateListeningStatus();
+
+        // Check if we have a valid shortcut (contains non-modifier key)
+        const hasNonModifierKey = Array.from(pressedKeys).some(key => {
+          const modifierKeys = ['cmd', 'ctrl', 'alt', 'shift', 'win', 'fn', 'capslock'];
+          return !modifierKeys.includes(key.toLowerCase());
+        });
+
+        // If we have a valid shortcut, capture it immediately (save data)
+        if (hasNonModifierKey) {
+          captureShortcut();
+        }
+      }
+      // Handle page-specific ESC behavior when not listening
+      else if (currentPage === 'main' && key === 'escape') {
+        // Handle ESC to close plugin
+        event.preventDefault();
+        parent.postMessage({
+          pluginMessage: {
+            type: 'close-plugin'
+          }
+        }, '*');
+        return;
+      }
+      else if (currentPage === 'config' && key === 'escape') {
+        // Handle ESC to go back to main page from config
+        event.preventDefault();
+        showPage('main');
+        return;
+      }
+      else if (currentPage === 'addCustom' && key === 'escape') {
+        // Handle ESC to go back to config page from add custom
+        event.preventDefault();
+        showPage('config');
+        return;
+      }
+      // Handle shortcut execution on main page
+      else if (currentPage === 'main') {
+        // Execute shortcuts
+        const shortcut = getShortcutFromEvent(event);
+        executeShortcut(shortcut);
+      }
+    }
+
+    // Handle key up
+    function handleKeyUp(event) {
+      // Don't handle keyboard events on addCustom page to allow form input
+      if (currentPage === 'addCustom' && !isListening) {
+        return;
+      }
+
+      if (isListening) {
+        event.preventDefault();
+
+        // Remove keys from pressedKeys set
+        const key = event.key.toLowerCase();
+        if (key.length === 1 && key.match(/[a-z0-9]/)) {
+          pressedKeys.delete(key);
+        } else if (['space', 'enter', 'tab'].includes(key)) {
+          pressedKeys.delete(key);
+        } else if (key.startsWith('arrow')) {
+          pressedKeys.delete(key.replace('arrow', ''));
+        } else if (key.startsWith('f') && key.length <= 3) {
+          pressedKeys.delete(key);
+        }
+
+        // Remove modifier keys
+        if (!event.metaKey) pressedKeys.delete('cmd');
+        if (!event.ctrlKey) pressedKeys.delete('ctrl');
+        if (!event.altKey) pressedKeys.delete('alt');
+        if (!event.shiftKey) pressedKeys.delete('shift');
+
+        // Update status bars with current pressed keys
+        updateListeningStatus();
+
+        // Check if we have a valid shortcut that was captured
+        const keys = Array.from(pressedKeys);
+        const modifierKeys = ['cmd', 'ctrl', 'alt', 'shift', 'win', 'fn', 'capslock'];
+        const hasNonModifierKey = keys.some(key => !modifierKeys.includes(key.toLowerCase()));
+        
+        // If we have a valid shortcut (contains non-modifier key) OR if we're releasing a non-modifier key
+        if ((hasNonModifierKey && keys.length > 0) || 
+            (!modifierKeys.includes(key) && key.length === 1 && key.match(/[a-z0-9]/))) {
+          completeShortcutCapture();
+        }
+      }
+    }
+
+    // Capture shortcut from pressed keys
+    function captureShortcut() {
+      if (!isListening || !listeningElement || pressedKeys.size === 0) return;
+
+      const keys = Array.from(pressedKeys);
+
+      // Check if shortcut contains only modifier keys
+      const modifierKeys = ['cmd', 'ctrl', 'alt', 'shift', 'win', 'fn', 'capslock'];
+      const isOnlyModifiers = keys.every(key => modifierKeys.includes(key.toLowerCase()));
+
+      if (isOnlyModifiers) {
+        // Show error and don't set shortcut
+        const actionName = getActionName(listeningElement.dataset.action);
+        updateStatus(`Invalid shortcut for: ${actionName}`, 'executed');
+        updateStatus(`Setting shortcut for: ${actionName}`, 'listening');
+
+        pressedKeys.clear();
+        updateListeningStatus();
+        return;
+      }
+
+      const shortcut = keys.join('+');
+      let action = listeningElement.dataset.action;
+      
+      // If we're on add custom action page and no action is set, create a temporary one
+      if (!action && currentPage === 'addCustom') {
+        action = 'temp_custom_' + Date.now();
+        listeningElement.dataset.action = action;
+      }
+      
+      shortcuts[action] = shortcut;
+      saveData();
+
+      // Send success notification to main thread
+      const actionName = getActionName(action);
+      parent.postMessage({
+        pluginMessage: {
+          type: 'shortcut-set-success',
+          actionName: actionName
+        }
+      }, '*');
+
+      // Update the listening element (current button being configured)
+      if (listeningElement.textContent !== undefined) {
+        listeningElement.innerHTML = renderShortcutKeys(shortcut);
+        listeningElement.classList.add('has-shortcut');
+        listeningElement.classList.remove('listening');
+      }
+
+      // Update shortcuts list on main page
+      renderShortcutsList();
+      
+      // Update the specific button in config list if we're on config page
+      if (currentPage === 'config') {
+        const action = listeningElement.dataset.action;
+        
+        // Re-render the entire config list to update conflict states
+        renderConfigList();
+      }
+
+      // Don't update status bar here - keep showing current pressed keys
+      // The status will be updated to ready state on key up
+      // Don't clear pressedKeys or stop listening here - wait for key up
+    }
+
+    // Handle shortcut completion on key up
+    function completeShortcutCapture() {
+      if (!isListening || !listeningElement) return;
+
+      // Update status to ready immediately
+      updateStatus('Ready', 'ready');
+
+      // Clear pressed keys and stop listening
+      pressedKeys.clear();
+      stopListening(false); // No delay, hide immediately
+    }
+
+    // Get shortcut from event
+    function getShortcutFromEvent(event) {
+      const keys = [];
+
+      if (event.metaKey) keys.push('cmd');
+      if (event.ctrlKey) keys.push('ctrl');
+      if (event.altKey) keys.push('alt');
+      if (event.shiftKey) keys.push('shift');
+
+      const key = event.key.toLowerCase();
+      if (key.length === 1 && key.match(/[a-z0-9]/)) {
+        keys.push(key);
+      } else if (['space', 'enter', 'escape', 'tab', 'backspace'].includes(key)) {
+        keys.push(key);
+      } else if (key.startsWith('arrow')) {
+        keys.push(key.replace('arrow', ''));
+      } else if (key.startsWith('f') && key.length <= 3) {
+        keys.push(key);
+      }
+
+      return keys.length > 0 ? keys.join('+') : null;
+    }
+
+    // Execute shortcut
+    function executeShortcut(shortcut) {
+      for (const [action, actionShortcut] of Object.entries(shortcuts)) {
+        if (actionShortcut === shortcut) {
+          updateStatus(`Executing: ${defaultActions[action] || action}`, 'executed');
+
+          // Send to main thread
+          parent.postMessage({
+            pluginMessage: {
+              type: 'shortcut-triggered',
+              action: action
+            }
+          }, '*');
+
+          updateStatus('Ready', 'ready');
+
+          return;
+        }
+      }
+    }
+
+    // Update status
+    function updateStatus(message, type = 'ready') {
+      const statusBarElement = statusBar.querySelector('.status-bar');
+      const titleElement = statusBarElement.querySelector('.status-bar-title');
+      const descElement = statusBarElement.querySelector('.status-bar-description');
+
+      if (type === 'ready') {
+        titleElement.innerHTML = 'Capturing Keys<span class="dots-animation"></span>';
+        descElement.textContent = 'Press shortcuts to run actions • ⌘+Click to configure';
+      } else if (type === 'listening') {
+        titleElement.textContent = message;
+        descElement.textContent = 'Press keys to set shortcut • ESC to cancel • DELETE to remove';
+      } else {
+        titleElement.textContent = message.split(' - ')[0] || message;
+        descElement.textContent = message.split(' - ')[1] || '';
+      }
+
+      statusBarElement.className = `status-bar ${type}`;
+    }
+
+    // Update listening status with current pressed keys
+    function updateListeningStatus() {
+      if (!isListening) return;
+
+      const keys = Array.from(pressedKeys);
+      let keysDisplay = '';
+
+      if (keys.length > 0) {
+        keysDisplay = keys.map(key => {
+          const keyLower = key.toLowerCase();
+          if (keyLower === 'cmd' || keyLower === 'command') {
+            return '⌘';
+          } else if (keyLower === 'ctrl' || keyLower === 'control') {
+            return platform === 'mac' ? '⌃' : 'Ctrl';
+          } else if (keyLower === 'alt' || keyLower === 'option') {
+            return platform === 'mac' ? '⌥' : 'Alt';
+          } else if (keyLower === 'shift') {
+            return '⇧';
+          } else if (keyLower === 'win' || keyLower === 'windows') {
+            return '⊞';
+          } else if (keyLower === 'fn' || keyLower === 'function') {
+            return platform === 'mac' ? 'fn' : 'Fn';
+          } else if (keyLower === 'capslock' || keyLower === 'caps') {
+            return '⇪';
+          } else {
+            return key.toUpperCase();
+          }
+        }).join(' + ');
+      }
+
+      // Update main status bar
+      const statusBarElement = statusBar.querySelector('.status-bar');
+      const titleElement = statusBarElement.querySelector('.status-bar-title');
+      const descElement = statusBarElement.querySelector('.status-bar-description');
+
+      if (keysDisplay) {
+        titleElement.textContent = keysDisplay;
+        descElement.textContent = 'Press more keys or release to set shortcut';
+      } else {
+        titleElement.textContent = 'Press keys to set shortcut';
+        descElement.textContent = 'ESC to cancel • DELETE to remove';
+      }
+
+      // Update floating status bar
+      const floatingTitle = floatingStatusBar.querySelector('.floating-status-bar-title');
+      const floatingDesc = floatingStatusBar.querySelector('.floating-status-bar-description');
+
+      if (keysDisplay) {
+        floatingTitle.textContent = keysDisplay;
+        floatingDesc.textContent = 'Press more keys or release to set shortcut';
+      } else {
+        floatingTitle.textContent = 'Press keys to set shortcut';
+        floatingDesc.textContent = 'Press ESC to cancel, DELETE to remove shortcut';
+      }
+    }
+
+    // Clear custom form
+    function clearCustomForm() {
+      document.getElementById('customActionName').value = '';
+      document.getElementById('customActionFunction').value = '';
+      document.getElementById('customShortcutBtn').textContent = 'Set Shortcut';
+      document.getElementById('customShortcutBtn').classList.remove('has-shortcut');
+      document.getElementById('customShortcutBtn').removeAttribute('data-action');
+    }
+
+    // Save custom action
+    function saveCustomAction() {
+      const name = document.getElementById('customActionName').value.trim();
+      const functionCode = document.getElementById('customActionFunction').value.trim();
+
+      if (!name || !functionCode) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      const id = 'custom_' + Date.now();
+      const action = { id, name, function: functionCode };
+
+      // Check if a shortcut was set for this custom action
+      const customShortcutBtn = document.getElementById('customShortcutBtn');
+      const shortcutAction = customShortcutBtn.dataset.action;
+      if (shortcutAction && shortcuts[shortcutAction]) {
+        // Move the shortcut from the temporary action to the new custom action
+        shortcuts[id] = shortcuts[shortcutAction];
+        delete shortcuts[shortcutAction];
+      }
+
+      customActions.push(action);
+      saveData();
+
+      // Send to main thread
+      parent.postMessage({
+        pluginMessage: {
+          type: 'custom-action-added',
+          action: action
+        }
+      }, '*');
+
+      // Update the main page shortcuts list to show the new custom action
+      renderShortcutsList();
+      
+      showPage('config');
+    }
+
+    // Toggle search mode
+    function toggleSearch() {
+      const tabsContent = document.querySelector('.tabs-content');
+      const searchContent = document.querySelector('.search-content');
+      const searchInput = document.getElementById('searchInput');
+
+      if (searchContent.classList.contains('active')) {
+        // Hide search, show tabs
+        searchContent.classList.remove('active');
+        tabsContent.style.display = 'flex';
+        searchInput.value = '';
+        // Clear search results
+        renderConfigList();
+      } else {
+        // Show search, hide tabs
+        searchContent.classList.add('active');
+        tabsContent.style.display = 'none';
+        // Focus immediately
+        searchInput.focus();
+      }
+    }
+
+    // Handle search input
+    function handleSearchInput(event) {
+      const searchTerm = event.target.value.toLowerCase().trim();
+
+      if (searchTerm === '') {
+        renderConfigList();
+        return;
+      }
+
+      const conflicts = detectShortcutConflicts();
+
+      // Filter default actions
+      let defaultHtml = '';
+      let foundResults = false;
+
+      // Search through all categories
+      for (const [category, actions] of Object.entries(defaultActions)) {
+        let categoryHtml = '';
+        let categoryHasResults = false;
+
+        for (const [action, name] of Object.entries(actions)) {
+          if (name.toLowerCase().includes(searchTerm)) {
+            const shortcut = shortcuts[action] || '';
+            const shortcutDisplay = shortcut ? renderShortcutKeys(shortcut) : 'Set Shortcut';
+            const hasShortcutClass = shortcut ? ' has-shortcut' : '';
+            const hasConflict = conflicts[action] && conflicts[action].length > 0;
+            const conflictClass = hasConflict ? ' conflict' : '';
+            const tooltipText = hasConflict ? getConflictTooltipText(action) : '';
+            
+            categoryHtml += `
+              <div class="config-item shortcut-item${conflictClass}" data-action="${action}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
+                <div class="shortcut-name">${name}</div>
+                <button class="shortcut-button${hasShortcutClass}" data-action="${action}">${shortcutDisplay}</button>
+              </div>
+            `;
+            categoryHasResults = true;
+            foundResults = true;
+          }
+        }
+
+        // Add category title and content if there are results
+        if (categoryHasResults) {
+          defaultHtml += `<h3 class="category-title">${category}</h3>`;
+          defaultHtml += categoryHtml;
+        }
+      }
+
+      if (!foundResults) {
+        defaultHtml = '<div class="empty-search-state">No results</div>';
+      }
+
+      // Filter custom actions
+      let customHtml = '';
+      customActions.forEach(action => {
+        if (action.name.toLowerCase().includes(searchTerm)) {
+          const shortcut = shortcuts[action.id] || '';
+          const shortcutDisplay = shortcut ? renderShortcutKeys(shortcut) : 'Set Shortcut';
+          const hasShortcutClass = shortcut ? ' has-shortcut' : '';
+          const hasConflict = conflicts[action.id] && conflicts[action.id].length > 0;
+          const conflictClass = hasConflict ? ' conflict' : '';
+          const tooltipText = hasConflict ? getConflictTooltipText(action.id) : '';
+          
+          customHtml += `
+              <div class="config-item shortcut-item custom-action${conflictClass}" data-action="${action.id}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
+                <div class="shortcut-name">${action.name}</div>
+                <button class="shortcut-button${hasShortcutClass}" data-action="${action.id}">${shortcutDisplay}</button>
+              </div>
+            `;
+        }
+      });
+
+      // Update both lists
+      document.getElementById('defaultConfigList').innerHTML = defaultHtml;
+      document.getElementById('customConfigList').innerHTML = customHtml;
+    }
+
+    // Handle shortcut item click on main page
+    function handleShortcutItemClick(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const shortcutItem = event.target.closest('.shortcut-item');
+      const action = shortcutItem.dataset.action;
+
+      if (!action) return;
+
+      // Check if command key is pressed
+      if (event.metaKey || event.ctrlKey) {
+        // Enter shortcut listening mode directly on the main page
+        startListeningForAction(action);
+      } else {
+        // Execute the action
+        const actionName = getActionName(action);
+        updateStatus(`Executing: ${actionName}`, 'executed');
+
+        // Send to main thread
+        parent.postMessage({
+          pluginMessage: {
+            type: 'shortcut-triggered',
+            action: action
+          }
+        }, '*');
+
+        updateStatus('Ready', 'ready');
+      }
+    }
+
+    // Start listening for shortcut on main page
+    function startListeningForAction(action) {
+      if (isListening) return;
+
+      isListening = true;
+      listeningElement = { dataset: { action: action } }; // Create a mock element for compatibility
+
+      // Clear pressed keys
+      pressedKeys.clear();
+
+      // Find the actual shortcut item on the main page and update its display
+      const shortcutItem = document.querySelector(`#mainPage .shortcut-item[data-action="${action}"]`);
+      if (shortcutItem) {
+        const keysElement = shortcutItem.querySelector('.shortcut-keys');
+        if (keysElement) {
+          keysElement.innerHTML = '<span class="key-text listening">Press keys...</span>';
+        }
+      }
+
+      const actionName = getActionName(action);
+      updateStatus(`Setting shortcut for: ${actionName}`, 'listening');
+
+      // Update status bars to show initial state
+      updateListeningStatus();
+
+      // Don't show floating status bar on main page, just use the main status bar
+      focusable.focus();
+    }
+
+    // Handle messages from main thread
+    window.addEventListener('message', (event) => {
+      if (event.data.pluginMessage) {
+        const msg = event.data.pluginMessage;
+        if (msg.type === 'shortcut-result') {
+          updateStatus(msg.message, msg.success ? 'executed' : 'ready');
+          updateStatus('Ready', 'ready');
+        } else if (msg.type === 'data-loaded') {
+          shortcuts = msg.shortcuts || {};
+          customActions = msg.customActions || [];
+          defaultActions = msg.defaultActions || {};
+          renderShortcutsList();
+          renderConfigList();
+        }
+      }
+    });
+
+    // Initialize
+    init();
+  </script>
+</body>
+
+</html>
