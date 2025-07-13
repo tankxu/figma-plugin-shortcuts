@@ -328,21 +328,10 @@
       border-left: 3px solid var(--figma-color-bg-brand);
     }
 
-    .shortcut-item.custom-action .shortcut-name::before {
-      content: "⚡ ";
-      color: var(--figma-color-bg-brand);
-      font-size: 10px;
-    }
 
     /* Custom action styling in config page */
     #configPage .shortcut-item.custom-action {
       border-left: 3px solid var(--figma-color-bg-brand);
-    }
-
-    #configPage .shortcut-item.custom-action .shortcut-name::before {
-      content: "⚡ ";
-      color: var(--figma-color-bg-brand);
-      font-size: 10px;
     }
 
     /* Shortcut conflict styling */
@@ -389,6 +378,12 @@
       display: flex;
       align-items: center;
       gap: 2px;
+    }
+
+    .shortcut-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .key-text {
@@ -440,6 +435,15 @@
 
     .button.secondary:hover {
       background: var(--figma-color-bg-hover);
+    }
+
+    .button.warning {
+      background: var(--figma-color-warning);
+      color: var(--figma-color-text-onbrand);
+    }
+
+    .button.warning:hover {
+      background: var(--figma-color-bg-warning-secondary);
     }
 
     .header {
@@ -643,7 +647,7 @@
     }
 
     .form-textarea {
-      min-height: 80px;
+      min-height: 140px;
       resize: vertical;
       font-family: 'Monaco', 'Menlo', monospace;
       font-size: 11px;
@@ -879,6 +883,7 @@
         <div class="form-actions">
           <button class="button secondary" id="cancelCustomBtn">Cancel</button>
           <button class="button" id="saveCustomBtn">Save</button>
+          <button class="button warning" id="deleteCustomBtn" style="display: none;">Delete</button>
         </div>
       </div>
     </div>
@@ -898,6 +903,7 @@
     let listeningElement = null;
     let platform = 'mac'; // Will be detected
     let pressedKeys = new Set();
+    let currentEditingActionId = null; // Track which custom action is being edited
 
     // DOM elements
     const statusBar = document.getElementById('statusBar');
@@ -1135,7 +1141,9 @@
         customHtml += `
                     <div class="config-item shortcut-item custom-action${conflictClass}" data-action="${action.id}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
                         <div class="shortcut-name" data-action="${action.id}">${action.name}</div>
-                        <button class="shortcut-button${hasShortcutClass}" data-action="${action.id}">${shortcutDisplay}</button>
+                        <div class="shortcut-actions">
+                            <button class="shortcut-button${hasShortcutClass}" data-action="${action.id}">${shortcutDisplay}</button>
+                        </div>
                     </div>
                 `;
       });
@@ -1173,6 +1181,20 @@
           if (button) {
             startListening(button);
           }
+        } else if (
+          e.target.closest('.shortcut-item.custom-action') &&
+          !e.target.classList.contains('shortcut-button') &&
+          currentPage === 'config'
+        ) {
+          const shortcutItem = e.target.closest('.shortcut-item.custom-action');
+          const actionId = shortcutItem.dataset.action;
+          editCustomAction(actionId);
+        } else if (e.target.closest('.edit-custom-btn')) {
+          // Handle edit custom action button click
+          e.preventDefault();
+          e.stopPropagation();
+          const actionId = e.target.closest('.edit-custom-btn').dataset.action;
+          editCustomAction(actionId);
         }
       });
 
@@ -1333,7 +1355,14 @@
           document.getElementById('addCustomPage').classList.add('active');
           currentPage = 'addCustom';
           statusBar.classList.add('hidden');
-          clearCustomForm();
+          
+          // Only clear form and generate new ID if not editing an existing action
+          if (!currentEditingActionId) {
+            clearCustomForm();
+            // Generate a fixed ID when opening the create page
+            const customId = 'custom_' + Date.now();
+            document.getElementById('customShortcutBtn').dataset.action = customId;
+          }
           break;
       }
 
@@ -1647,9 +1676,9 @@
       const shortcut = keys.join('+');
       let action = listeningElement.dataset.action;
       
-      // If we're on add custom action page and no action is set, create a temporary one
-      if (!action && currentPage === 'addCustom') {
-        action = 'temp_custom_' + Date.now();
+      // If we're on add custom action page, use the action ID from the button
+      if (currentPage === 'addCustom') {
+        action = document.getElementById('customShortcutBtn').dataset.action;
         listeningElement.dataset.action = action;
       }
       
@@ -1827,6 +1856,18 @@
       document.getElementById('customShortcutBtn').textContent = 'Set Shortcut';
       document.getElementById('customShortcutBtn').classList.remove('has-shortcut');
       document.getElementById('customShortcutBtn').removeAttribute('data-action');
+      
+      // Reset header title
+      const headerTitle = document.querySelector('#addCustomPage h2');
+      if (headerTitle) {
+        headerTitle.textContent = 'Add Custom Action';
+      }
+      
+      // Reset editing state
+      currentEditingActionId = null;
+      
+      // Hide delete button
+      document.getElementById('deleteCustomBtn').style.display = 'none';
     }
 
     // Save custom action
@@ -1839,19 +1880,34 @@
         return;
       }
 
-      const id = 'custom_' + Date.now();
-      const action = { id, name, function: functionCode };
-
-      // Check if a shortcut was set for this custom action
-      const customShortcutBtn = document.getElementById('customShortcutBtn');
-      const shortcutAction = customShortcutBtn.dataset.action;
-      if (shortcutAction && shortcuts[shortcutAction]) {
-        // Move the shortcut from the temporary action to the new custom action
-        shortcuts[id] = shortcuts[shortcutAction];
-        delete shortcuts[shortcutAction];
+      let action;
+      
+      if (currentEditingActionId) {
+        // Editing existing action
+        const existingActionIndex = customActions.findIndex(a => a.id === currentEditingActionId);
+        if (existingActionIndex !== -1) {
+          // Update existing action
+          customActions[existingActionIndex] = {
+            ...customActions[existingActionIndex],
+            name: name,
+            function: functionCode
+          };
+          action = customActions[existingActionIndex];
+        }
+      } else {
+        // Creating new action - use the ID that was generated when page opened
+        const customActionId = document.getElementById('customShortcutBtn').dataset.action;
+        if (customActionId && customActionId.startsWith('custom_')) {
+          action = { id: customActionId, name, function: functionCode };
+          customActions.push(action);
+        } else {
+          // Fallback: generate new ID
+          const id = 'custom_' + Date.now();
+          action = { id, name, function: functionCode };
+          customActions.push(action);
+        }
       }
 
-      customActions.push(action);
       saveData();
 
       // Send to main thread
@@ -1865,7 +1921,78 @@
       // Update the main page shortcuts list to show the new custom action
       renderShortcutsList();
       
+      // Reset editing state
+      currentEditingActionId = null;
+      
       showPage('config');
+    }
+
+    // Delete custom action
+    function deleteCustomAction() {
+      if (!currentEditingActionId) return;
+      
+      if (confirm('Are you sure you want to delete this custom action?')) {
+        // Remove from customActions array
+        const actionIndex = customActions.findIndex(a => a.id === currentEditingActionId);
+        if (actionIndex !== -1) {
+          customActions.splice(actionIndex, 1);
+        }
+        
+        // Remove shortcut if exists
+        if (shortcuts[currentEditingActionId]) {
+          delete shortcuts[currentEditingActionId];
+        }
+        
+        saveData();
+        
+        // Update UI
+        renderShortcutsList();
+        renderConfigList();
+        
+        // Reset editing state
+        currentEditingActionId = null;
+        
+        // Go back to config page
+        showPage('config');
+      }
+    }
+
+    // Edit custom action
+    function editCustomAction(actionId) {
+      const action = customActions.find(a => a.id === actionId);
+      if (!action) return;
+      
+      // Set editing state
+      currentEditingActionId = actionId;
+      
+      // Show edit page first
+      showPage('addCustom');
+      
+      // Update form after page is shown
+      setTimeout(() => {
+        document.getElementById('customActionName').value = action.name;
+        document.getElementById('customActionFunction').value = action.function;
+        
+        // Update shortcut button
+        const customShortcutBtn = document.getElementById('customShortcutBtn');
+        if (shortcuts[actionId]) {
+          customShortcutBtn.innerHTML = renderShortcutKeys(shortcuts[actionId]);
+          customShortcutBtn.classList.add('has-shortcut');
+          customShortcutBtn.dataset.action = actionId;
+        } else {
+          customShortcutBtn.textContent = 'Set Shortcut';
+          customShortcutBtn.classList.remove('has-shortcut');
+          customShortcutBtn.dataset.action = actionId;
+        }
+        
+        // Update UI
+        const headerTitle = document.querySelector('#addCustomPage h2');
+        if (headerTitle) {
+          headerTitle.textContent = 'Edit Custom Action';
+        }
+        document.getElementById('deleteCustomBtn').style.display = 'inline-block';
+        document.getElementById('deleteCustomBtn').style.backgroundColor = 'var(--figma-color-warning)';
+      }, 10);
     }
 
     // Toggle search mode
@@ -1955,7 +2082,9 @@
           customHtml += `
               <div class="config-item shortcut-item custom-action${conflictClass}" data-action="${action.id}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
                 <div class="shortcut-name">${action.name}</div>
-                <button class="shortcut-button${hasShortcutClass}" data-action="${action.id}">${shortcutDisplay}</button>
+                <div class="shortcut-actions">
+                    <button class="shortcut-button${hasShortcutClass}" data-action="${action.id}">${shortcutDisplay}</button>
+                </div>
               </div>
             `;
         }
@@ -2047,5 +2176,4 @@
     init();
   </script>
 </body>
-
 </html>
