@@ -34,14 +34,18 @@
       --figma-color-bg-brand-pressed: #007be5;
       --figma-color-bg-brand-secondary: #0768cf;
       --figma-color-bg-brand-tertiary: #e5f4ff;
+      --figma-color-bg-selected-secondary: #f2f9ff;
       --figma-color-bg-success-secondary: #008043;
       --figma-color-bg-success-tertiary: #d5f7da;
       --figma-color-bg-warning-secondary: #eba611;
       --figma-color-bg-warning-tertiary: #fff1c2;
       --figma-color-bg-tertiary: #e6e6e6;
       --figma-color-bg-tooltip: #1e1e1e;
+      --figma-color-bg-menu: #1e1e1e;
       --figma-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --figma-font-family-mono: 'Roboto Mono', 'Monaco', 'Courier New', monospace;
+      --figma-elevation-300-tooltip: 0px 0px .5px rgba(0, 0, 0, .15), 0px 5px 12px rgba(0, 0, 0, .13), 0px 1px 3px rgba(0, 0, 0, .1);
+      --figma-elevation-400-menu-panel: 0px 0px .5px rgba(0, 0, 0, .12), 0px 10px 16px rgba(0, 0, 0, .12), 0px 2px 5px rgba(0, 0, 0, .15);
     }
 
     * {
@@ -321,17 +325,24 @@
       width: fit-content;
       line-height: 130%;
     }
-    
+
 
     /* Custom action styling */
-    .shortcut-item.custom-action {
-      border-left: 3px solid var(--figma-color-bg-brand);
-    }
-
-
-    /* Custom action styling in config page */
-    #configPage .shortcut-item.custom-action {
-      border-left: 3px solid var(--figma-color-bg-brand);
+    .shortcut-item.custom-action:before {
+      content: '';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2px;
+      height: 16px;
+      background-color: var(--figma-color-bg-brand);
+      border-radius: 2px;
+      position: absolute;
+      left: 0px;
+      transform: translate(-50%, 0);
+      font-size: 11px;
+      font-weight: 550;
+      color: var(--figma-color-text-onbrand);
     }
 
     /* Shortcut conflict styling */
@@ -372,6 +383,7 @@
     .shortcut-name {
       color: var(--figma-color-text);
       font-weight: 500;
+      word-break: break-word;
     }
 
     .shortcut-keys {
@@ -417,10 +429,6 @@
       font-weight: 550;
       transition: all 0.1s ease;
       height: 32px;
-    }
-
-    .button:hover {
-      background: var(--figma-color-bg-brand-hover);
     }
 
     .button:active {
@@ -552,6 +560,14 @@
       /* Ensure flex child can shrink */
     }
 
+    #customTab .shortcut-item:hover {
+      background: var(--figma-color-bg-hover);
+    }
+
+    #customTab .shortcut-item:hover .key-text {
+      background: var(--figma-color-bg);
+    }
+
     .config-item {
       margin-bottom: 4px;
     }
@@ -576,7 +592,8 @@
       gap: 2px;
     }
 
-    .config-item .shortcut-button.listening {
+    .config-item .shortcut-button.listening,
+    #addCustomPage .shortcut-button.listening {
       background: var(--figma-color-bg-brand);
       color: var(--figma-color-text-onbrand);
       padding: 4px 8px;
@@ -604,7 +621,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 16px auto;
+      margin: 16px auto 8px;
     }
 
     .add-button {
@@ -616,6 +633,10 @@
       font-size: 11px;
       color: var(--figma-color-text);
       transition: all 0.1s ease;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .form-group {
@@ -649,7 +670,7 @@
     .form-textarea {
       min-height: 140px;
       resize: vertical;
-      font-family: 'Monaco', 'Menlo', monospace;
+      font-family: var(--figma-font-family-mono);
       font-size: 11px;
     }
 
@@ -660,6 +681,35 @@
 
     .form-actions .button {
       flex: 1;
+      padding: 0;
+    }
+
+    .form-actions .button.more-actions {
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      max-width: 24px;
+      border-radius: 0px 5px 5px 0px;
+      border: none;
+      transition: all 0.1s ease;
+    }
+
+    .form-actions .button.more-actions.active {
+      background: var(--figma-color-bg-selected-secondary);
+      color: var(--figma-color-bg-brand);
+    }
+
+    .more-action-button-group {
+      display: flex;
+      gap: 1px;
+      flex: 1;
+      position: relative;
+    }
+
+    .more-action-button-group .button#saveCustomBtnGroup {
+      border-radius: 5px 0px 0px 5px;
     }
 
     .empty-state {
@@ -754,6 +804,38 @@
       width: 1px;
       height: 1px;
     }
+
+    .dropdown-menu {
+      position: absolute;
+      bottom: 40px;
+      right: 0;
+      background: #1e1e1e;
+      border-radius: 13px;
+      padding: 8px;
+      box-shadow: var(--figma-elevation-400-menu-panel);
+      min-width: 140px;
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .dropdown-menu .dropdown-item {
+      padding: 4px 8px;
+      font-size: 12px;
+      border-radius: 5px;
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: start;
+      word-break: break-word;
+      color: var(--figma-color-text-onbrand);
+      text-align: left;
+    }
+
+    .dropdown-menu .dropdown-item:hover {
+      background: var(--figma-color-bg-brand);
+    }
   </style>
 </head>
 
@@ -842,7 +924,7 @@
         <!-- Custom actions tab -->
         <div class="tab-content" id="customTab">
           <div class="add-custom-action-container">
-            <button class="add-button" id="addCustomBtn">+ Add Custom Action</button>
+            <button class="add-button" id="addCustomBtn">Add Custom Action</button>
           </div>
           <div class="config-list" id="customConfigList">
             <!-- Will be populated by JavaScript -->
@@ -865,14 +947,14 @@
 
       <div class="content">
         <div class="form-group">
-          <label class="form-label">Action Name</label>
+          <label class="form-label">Name</label>
           <input type="text" class="form-input" id="customActionName" placeholder="Enter action name">
         </div>
 
         <div class="form-group">
-          <label class="form-label">Action Function</label>
+          <label class="form-label">Function</label>
           <textarea class="form-input form-textarea" id="customActionFunction"
-            placeholder="// Example:&#10;// selection.forEach(node => {&#10;//   if ('cornerRadius' in node) {&#10;//     node.cornerRadius = 8;&#10;//   }&#10;// });"></textarea>
+            placeholder="// Example:&#10;&#10;selection.forEach(node => {&#10;  if ('cornerRadius' in node) {&#10;    node.cornerRadius = 8;&#10;  }&#10;});"></textarea>
         </div>
 
         <div class="form-group">
@@ -883,7 +965,15 @@
         <div class="form-actions">
           <button class="button secondary" id="cancelCustomBtn">Cancel</button>
           <button class="button" id="saveCustomBtn">Save</button>
-          <button class="button warning" id="deleteCustomBtn" style="display: none;">Delete</button>
+          <div class="more-action-button-group" style="display: none;">
+            <button class="button" id="saveCustomBtnGroup">Save</button>
+            <button class="button more-actions" id="moreActionsBtn" type="button"><svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M10.475 6.768a.5.5 0 0 1 0 .707L8.354 9.596 8 9.95l-.354-.354-2.12-2.121a.5.5 0 0 1 .706-.707L8 8.536l1.768-1.768a.5.5 0 0 1 .707 0" clip-rule="evenodd"></path></svg></button>
+            <div id="moreActionsDropdown" class="dropdown-menu" style="display:none;">
+              <div class="dropdown-item" id="duplicateCustomBtn">Duplicate</div>
+              <div class="dropdown-item" id="deleteCustomBtn">
+                Delete</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -974,14 +1064,14 @@
     function getConflictTooltipText(action) {
       const conflicts = detectShortcutConflicts();
       const conflictingActions = conflicts[action];
-      
+
       if (!conflictingActions || conflictingActions.length === 0) {
         return null;
       }
 
       const shortcut = shortcuts[action];
       const conflictNames = conflictingActions.map(conflictAction => getActionName(conflictAction));
-      
+
       return `Shortcut conflict with: ${conflictNames.join(', ')}`;
     }
 
@@ -1049,7 +1139,7 @@
         const customClass = isCustom ? ' custom-action' : '';
         const conflictClass = hasConflict ? ' conflict' : '';
         const tooltipText = hasConflict ? getConflictTooltipText(action) : '';
-        
+
         html += `<div class="shortcut-item${customClass}${conflictClass}" data-action="${action}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
                        <div class="shortcut-name">${actionName}</div>
                        <div class="shortcut-keys">${renderShortcutKeys(shortcut)}</div>
@@ -1096,7 +1186,7 @@
     // Render configuration list
     function renderConfigList() {
       const conflicts = detectShortcutConflicts();
-      
+
       // Default actions - organized by categories in alphabetical order
       let defaultHtml = '';
 
@@ -1116,7 +1206,7 @@
           const hasConflict = conflicts[action] && conflicts[action].length > 0;
           const conflictClass = hasConflict ? ' conflict' : '';
           const tooltipText = hasConflict ? getConflictTooltipText(action) : '';
-          
+
           defaultHtml += `
                         <div class="config-item shortcut-item${conflictClass}" data-action="${action}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
                             <div class="shortcut-name" data-action="${action}">${name}</div>
@@ -1137,7 +1227,7 @@
         const hasConflict = conflicts[action.id] && conflicts[action.id].length > 0;
         const conflictClass = hasConflict ? ' conflict' : '';
         const tooltipText = hasConflict ? getConflictTooltipText(action.id) : '';
-        
+
         customHtml += `
                     <div class="config-item shortcut-item custom-action${conflictClass}" data-action="${action.id}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
                         <div class="shortcut-name" data-action="${action.id}">${action.name}</div>
@@ -1221,13 +1311,13 @@
       // Custom action form
       document.getElementById('saveCustomBtn').addEventListener('click', saveCustomAction);
       document.getElementById('cancelCustomBtn').addEventListener('click', () => showPage('config'));
-      
+
       // Ensure form inputs can be focused on addCustom page
       document.getElementById('customActionName').addEventListener('click', (e) => {
         e.stopPropagation();
         e.target.focus();
       });
-      
+
       document.getElementById('customActionFunction').addEventListener('click', (e) => {
         e.stopPropagation();
         e.target.focus();
@@ -1270,7 +1360,7 @@
       // Create tooltip element
       function createTooltip() {
         if (tooltip) return tooltip;
-        
+
         tooltip = document.createElement('div');
         tooltip.className = 'tooltip';
         document.body.appendChild(tooltip);
@@ -1280,15 +1370,15 @@
       // Show tooltip
       function showTooltip(element, text) {
         if (!text) return;
-        
+
         const tooltipEl = createTooltip();
         tooltipEl.textContent = text;
         tooltipEl.classList.add('show');
-        
+
         // Position tooltip
         const rect = element.getBoundingClientRect();
         const tooltipRect = tooltipEl.getBoundingClientRect();
-        
+
         // Adjust position if tooltip would go off screen
         let left = rect.left + rect.width / 2;
         if (left + tooltipRect.width / 2 > window.innerWidth) {
@@ -1296,7 +1386,7 @@
         } else if (left - tooltipRect.width / 2 < 0) {
           left = tooltipRect.width / 2 + 10;
         }
-        
+
         tooltipEl.style.left = left + 'px';
         tooltipEl.style.top = (rect.top - tooltipRect.height - 8) + 'px';
       }
@@ -1332,6 +1422,68 @@
       // Hide tooltip when clicking or pressing keys
       document.addEventListener('click', hideTooltip);
       document.addEventListener('keydown', hideTooltip);
+
+      function updateCustomFormActions() {
+        const saveBtn = document.getElementById('saveCustomBtn');
+        const moreGroup = document.querySelector('.more-action-button-group');
+        if (currentEditingActionId) {
+          // editing
+          saveBtn.style.display = 'none';
+          moreGroup.style.display = 'flex';
+        } else {
+          // creating
+          saveBtn.style.display = 'inline-block';
+          moreGroup.style.display = 'none';
+        }
+      }
+      // call after showPage('addCustom')
+      const origShowPage = showPage;
+      showPage = function (pageName) {
+        origShowPage(pageName);
+        if (pageName === 'addCustom') {
+          updateCustomFormActions();
+        }
+      }
+      // --- add/edit: more actions dropdown ---
+      const moreActionsBtn = document.getElementById('moreActionsBtn');
+      const moreActionsDropdown = document.getElementById('moreActionsDropdown');
+      let dropdownOpen = false;
+      if (moreActionsBtn) {
+        moreActionsBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          dropdownOpen = !dropdownOpen;
+          moreActionsDropdown.style.display = dropdownOpen ? 'block' : 'none';
+          moreActionsBtn.classList.add('active');
+        });
+        // click outside to close
+        document.addEventListener('click', function () {
+          if (dropdownOpen) {
+            moreActionsDropdown.style.display = 'none';
+            dropdownOpen = false;
+            moreActionsBtn.classList.remove('active');
+          }
+        });
+        // prevent click inside to bubble
+        moreActionsDropdown.addEventListener('click', function (e) {
+          e.stopPropagation();
+        });
+      }
+      // bind duplicate and delete
+      document.getElementById('duplicateCustomBtn').addEventListener('click', function () {
+        if (!currentEditingActionId) return;
+        const action = customActions.find(a => a.id === currentEditingActionId);
+        if (!action) return;
+        // duplicate logic
+        const newId = 'custom_' + Date.now();
+        const newAction = { ...action, id: newId, name: action.name + ' Copy' };
+        customActions.push(newAction);
+        saveData();
+        renderConfigList();
+        showPage('config');
+      });
+      document.getElementById('deleteCustomBtn').addEventListener('click', function () {
+        deleteCustomAction();
+      });
     }
 
     // Show page
@@ -1355,7 +1507,7 @@
           document.getElementById('addCustomPage').classList.add('active');
           currentPage = 'addCustom';
           statusBar.classList.add('hidden');
-          
+
           // Only clear form and generate new ID if not editing an existing action
           if (!currentEditingActionId) {
             clearCustomForm();
@@ -1400,11 +1552,11 @@
 
       // Clear pressed keys and reset status bars
       pressedKeys.clear();
-      
+
       // Show floating status bar with hint
       floatingStatusBar.classList.add('listening');
       floatingStatusBar.style.display = 'flex';
-      
+
       // Reset floating status bar content
       const floatingTitle = floatingStatusBar.querySelector('.floating-status-bar-title');
       const floatingDesc = floatingStatusBar.querySelector('.floating-status-bar-description');
@@ -1415,7 +1567,7 @@
     }
 
     // Stop listening
-    function stopListening(delay=false) {
+    function stopListening(delay = false) {
       if (!isListening) return;
 
       isListening = false;
@@ -1504,7 +1656,7 @@
 
       // Always update the shortcuts list
       renderShortcutsList();
-      
+
       // Update config list if on config page
       if (currentPage === 'config') {
         renderConfigList();
@@ -1643,10 +1795,10 @@
         const keys = Array.from(pressedKeys);
         const modifierKeys = ['cmd', 'ctrl', 'alt', 'shift', 'win', 'fn', 'capslock'];
         const hasNonModifierKey = keys.some(key => !modifierKeys.includes(key.toLowerCase()));
-        
+
         // If we have a valid shortcut (contains non-modifier key) OR if we're releasing a non-modifier key
-        if ((hasNonModifierKey && keys.length > 0) || 
-            (!modifierKeys.includes(key) && key.length === 1 && key.match(/[a-z0-9]/))) {
+        if ((hasNonModifierKey && keys.length > 0) ||
+          (!modifierKeys.includes(key) && key.length === 1 && key.match(/[a-z0-9]/))) {
           completeShortcutCapture();
         }
       }
@@ -1675,13 +1827,13 @@
 
       const shortcut = keys.join('+');
       let action = listeningElement.dataset.action;
-      
+
       // If we're on add custom action page, use the action ID from the button
       if (currentPage === 'addCustom') {
         action = document.getElementById('customShortcutBtn').dataset.action;
         listeningElement.dataset.action = action;
       }
-      
+
       shortcuts[action] = shortcut;
       saveData();
 
@@ -1703,11 +1855,11 @@
 
       // Update shortcuts list on main page
       renderShortcutsList();
-      
+
       // Update the specific button in config list if we're on config page
       if (currentPage === 'config') {
         const action = listeningElement.dataset.action;
-        
+
         // Re-render the entire config list to update conflict states
         renderConfigList();
       }
@@ -1856,18 +2008,15 @@
       document.getElementById('customShortcutBtn').textContent = 'Set Shortcut';
       document.getElementById('customShortcutBtn').classList.remove('has-shortcut');
       document.getElementById('customShortcutBtn').removeAttribute('data-action');
-      
+
       // Reset header title
       const headerTitle = document.querySelector('#addCustomPage h2');
       if (headerTitle) {
         headerTitle.textContent = 'Add Custom Action';
       }
-      
+
       // Reset editing state
       currentEditingActionId = null;
-      
-      // Hide delete button
-      document.getElementById('deleteCustomBtn').style.display = 'none';
     }
 
     // Save custom action
@@ -1880,8 +2029,14 @@
         return;
       }
 
+      // Check for security violations
+      if (functionCode.includes('postMessage')) {
+        alert('Security violation: postMessage is not allowed in custom actions');
+        return;
+      }
+
       let action;
-      
+
       if (currentEditingActionId) {
         // Editing existing action
         const existingActionIndex = customActions.findIndex(a => a.id === currentEditingActionId);
@@ -1920,38 +2075,38 @@
 
       // Update the main page shortcuts list to show the new custom action
       renderShortcutsList();
-      
+
       // Reset editing state
       currentEditingActionId = null;
-      
+
       showPage('config');
     }
 
     // Delete custom action
     function deleteCustomAction() {
       if (!currentEditingActionId) return;
-      
+
       if (confirm('Are you sure you want to delete this custom action?')) {
         // Remove from customActions array
         const actionIndex = customActions.findIndex(a => a.id === currentEditingActionId);
         if (actionIndex !== -1) {
           customActions.splice(actionIndex, 1);
         }
-        
+
         // Remove shortcut if exists
         if (shortcuts[currentEditingActionId]) {
           delete shortcuts[currentEditingActionId];
         }
-        
+
         saveData();
-        
+
         // Update UI
         renderShortcutsList();
         renderConfigList();
-        
+
         // Reset editing state
         currentEditingActionId = null;
-        
+
         // Go back to config page
         showPage('config');
       }
@@ -1961,18 +2116,18 @@
     function editCustomAction(actionId) {
       const action = customActions.find(a => a.id === actionId);
       if (!action) return;
-      
+
       // Set editing state
       currentEditingActionId = actionId;
-      
+
       // Show edit page first
       showPage('addCustom');
-      
+
       // Update form after page is shown
       setTimeout(() => {
         document.getElementById('customActionName').value = action.name;
         document.getElementById('customActionFunction').value = action.function;
-        
+
         // Update shortcut button
         const customShortcutBtn = document.getElementById('customShortcutBtn');
         if (shortcuts[actionId]) {
@@ -1984,14 +2139,12 @@
           customShortcutBtn.classList.remove('has-shortcut');
           customShortcutBtn.dataset.action = actionId;
         }
-        
+
         // Update UI
         const headerTitle = document.querySelector('#addCustomPage h2');
         if (headerTitle) {
           headerTitle.textContent = 'Edit Custom Action';
         }
-        document.getElementById('deleteCustomBtn').style.display = 'inline-block';
-        document.getElementById('deleteCustomBtn').style.backgroundColor = 'var(--figma-color-warning)';
       }, 10);
     }
 
@@ -2045,7 +2198,7 @@
             const hasConflict = conflicts[action] && conflicts[action].length > 0;
             const conflictClass = hasConflict ? ' conflict' : '';
             const tooltipText = hasConflict ? getConflictTooltipText(action) : '';
-            
+
             categoryHtml += `
               <div class="config-item shortcut-item${conflictClass}" data-action="${action}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
                 <div class="shortcut-name">${name}</div>
@@ -2078,7 +2231,7 @@
           const hasConflict = conflicts[action.id] && conflicts[action.id].length > 0;
           const conflictClass = hasConflict ? ' conflict' : '';
           const tooltipText = hasConflict ? getConflictTooltipText(action.id) : '';
-          
+
           customHtml += `
               <div class="config-item shortcut-item custom-action${conflictClass}" data-action="${action.id}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
                 <div class="shortcut-name">${action.name}</div>
@@ -2176,4 +2329,5 @@
     init();
   </script>
 </body>
+
 </html>

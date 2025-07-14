@@ -548,6 +548,14 @@ async function executeCustomAction(actionId: string) {
     const functionCode = customAction.function;
     const actionName = customAction.name;
     
+    // Backend security check - prevent postMessage attacks
+    if (functionCode.includes('postMessage')) {
+      return { 
+        success: false, 
+        message: `Security violation: postMessage is not allowed in custom actions` 
+      };
+    }
+    
     try {
       // Create a function from the code with proper context
       const customFunction = new Function(
@@ -616,9 +624,19 @@ function setupUI() {
     }
 
     if (msg.type === 'save-data') {
+      // Backend security validation before saving
+      const customActions = msg.customActions || [];
+      for (const action of customActions) {
+        if (action.function && action.function.includes('postMessage')) {
+          console.error('Security violation: Attempted to save custom action with postMessage');
+          figma.notify('Security violation: postMessage is not allowed');
+          return;
+        }
+      }
+      
       // Save data to client storage
       figma.clientStorage.setAsync('shortcuts', msg.shortcuts || {});
-      figma.clientStorage.setAsync('customActions', msg.customActions || []);
+      figma.clientStorage.setAsync('customActions', customActions);
       return;
     }
 
