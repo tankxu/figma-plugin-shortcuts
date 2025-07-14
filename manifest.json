@@ -14,7 +14,7 @@
   "ui": "ui.html",
   "networkAccess": {
     "allowedDomains": [
-      "none"
+      "https://static.figma.com"
     ]
   }
 }

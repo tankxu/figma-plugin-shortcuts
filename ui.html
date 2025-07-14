@@ -5,6 +5,13 @@
   <meta charset="UTF-8">
   <title>Shortcuts</title>
   <style>
+    @font-face {
+      font-family: 'Roboto Mono';
+      src: url('https://static.figma.com/font/RobotoMono_wght__1') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }
+
     :root {
       --figma-color-bg: #ffffff;
       --figma-color-bg-secondary: #f5f5f5;
@@ -441,10 +448,6 @@
       border: 1px solid var(--figma-color-border);
     }
 
-    .button.secondary:hover {
-      background: var(--figma-color-bg-hover);
-    }
-
     .button.warning {
       background: var(--figma-color-warning);
       color: var(--figma-color-text-onbrand);
@@ -670,6 +673,10 @@
     .form-textarea {
       min-height: 140px;
       resize: vertical;
+    }
+
+    .form-textarea.code-editor {
+      list-style: 18px;
       font-family: var(--figma-font-family-mono);
       font-size: 11px;
     }
@@ -953,7 +960,7 @@
 
         <div class="form-group">
           <label class="form-label">Function</label>
-          <textarea class="form-input form-textarea" id="customActionFunction"
+          <textarea class="form-input form-textarea code-editor" id="customActionFunction"
             placeholder="// Example:&#10;&#10;selection.forEach(node => {&#10;  if ('cornerRadius' in node) {&#10;    node.cornerRadius = 8;&#10;  }&#10;});"></textarea>
         </div>
 
@@ -967,7 +974,12 @@
           <button class="button" id="saveCustomBtn">Save</button>
           <div class="more-action-button-group" style="display: none;">
             <button class="button" id="saveCustomBtnGroup">Save</button>
-            <button class="button more-actions" id="moreActionsBtn" type="button"><svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M10.475 6.768a.5.5 0 0 1 0 .707L8.354 9.596 8 9.95l-.354-.354-2.12-2.121a.5.5 0 0 1 .706-.707L8 8.536l1.768-1.768a.5.5 0 0 1 .707 0" clip-rule="evenodd"></path></svg></button>
+            <button class="button more-actions" id="moreActionsBtn" type="button"><svg width="16" height="16"
+                fill="none" viewBox="0 0 16 16">
+                <path fill="currentColor" fill-rule="evenodd"
+                  d="M10.475 6.768a.5.5 0 0 1 0 .707L8.354 9.596 8 9.95l-.354-.354-2.12-2.121a.5.5 0 0 1 .706-.707L8 8.536l1.768-1.768a.5.5 0 0 1 .707 0"
+                  clip-rule="evenodd"></path>
+              </svg></button>
             <div id="moreActionsDropdown" class="dropdown-menu" style="display:none;">
               <div class="dropdown-item" id="duplicateCustomBtn">Duplicate</div>
               <div class="dropdown-item" id="deleteCustomBtn">
@@ -992,8 +1004,9 @@
     let isListening = false;
     let listeningElement = null;
     let platform = 'mac'; // Will be detected
-    let pressedKeys = new Set();
+    let pressedCodes = new Set();
     let currentEditingActionId = null; // Track which custom action is being edited
+    let justEnteredListening = false;
 
     // DOM elements
     const statusBar = document.getElementById('statusBar');
@@ -1008,7 +1021,29 @@
     const tabContents = document.querySelectorAll('.tab-content');
     const pages = document.querySelectorAll('.page');
 
-
+    // 在脚本最前面添加 code 到字符的映射表
+    const codeToDisplay = {
+      'Digit0': '0', 'Digit1': '1', 'Digit2': '2', 'Digit3': '3', 'Digit4': '4',
+      'Digit5': '5', 'Digit6': '6', 'Digit7': '7', 'Digit8': '8', 'Digit9': '9',
+      'KeyA': 'A', 'KeyB': 'B', 'KeyC': 'C', 'KeyD': 'D', 'KeyE': 'E', 'KeyF': 'F',
+      'KeyG': 'G', 'KeyH': 'H', 'KeyI': 'I', 'KeyJ': 'J', 'KeyK': 'K', 'KeyL': 'L',
+      'KeyM': 'M', 'KeyN': 'N', 'KeyO': 'O', 'KeyP': 'P', 'KeyQ': 'Q', 'KeyR': 'R',
+      'KeyS': 'S', 'KeyT': 'T', 'KeyU': 'U', 'KeyV': 'V', 'KeyW': 'W', 'KeyX': 'X',
+      'KeyY': 'Y', 'KeyZ': 'Z',
+      'Minus': '-', 'Equal': '=', 'BracketLeft': '[', 'BracketRight': ']',
+      'Backslash': '\\', 'Semicolon': ';', 'Quote': '\'', 'Comma': ',', 'Period': '.', 'Slash': '/',
+      'Backquote': '`',
+      'Numpad0': 'Num0', 'Numpad1': 'Num1', 'Numpad2': 'Num2', 'Numpad3': 'Num3', 'Numpad4': 'Num4',
+      'Numpad5': 'Num5', 'Numpad6': 'Num6', 'Numpad7': 'Num7', 'Numpad8': 'Num8', 'Numpad9': 'Num9',
+      'NumpadAdd': '+', 'NumpadSubtract': '-', 'NumpadMultiply': '*', 'NumpadDivide': '/',
+      'NumpadDecimal': '.',
+      'Space': 'Space', 'Tab': 'Tab', 'Enter': 'Enter', 'Backspace': 'Backspace',
+      'Escape': 'Esc',
+      'ArrowUp': '↑', 'ArrowDown': '↓', 'ArrowLeft': '←', 'ArrowRight': '→',
+      'CapsLock': 'Caps', 'ContextMenu': 'Menu',
+      'Insert': 'Ins', 'Delete': 'Del', 'Home': 'Home', 'End': 'End', 'PageUp': 'PgUp', 'PageDown': 'PgDn',
+      // 其它常用键可继续补充
+    };
 
     // Helper function to get action name
     function getActionName(actionId) {
@@ -1099,6 +1134,7 @@
 
     // Save data to main thread
     function saveData() {
+      // Always save shortcuts as { [id]: { shortcut, name } }
       parent.postMessage({
         pluginMessage: {
           type: 'save-data',
@@ -1175,6 +1211,8 @@
           html += `<span class="key-text">${platform === 'mac' ? 'fn' : 'Fn'}</span>`;
         } else if (keyLower === 'capslock' || keyLower === 'caps') {
           html += '<span class="key-text">⇪</span>';
+        } else if (codeToDisplay[key]) {
+          html += `<span class="key-text">${codeToDisplay[key]}</span>`;
         } else {
           html += `<span class="key-text">${key.toUpperCase()}</span>`;
         }
@@ -1187,17 +1225,17 @@
     function renderConfigList() {
       const conflicts = detectShortcutConflicts();
 
-      // Default actions - organized by categories in alphabetical order
+      // Default actions - organized by categories in original order
       let defaultHtml = '';
 
-      // Get categories and sort them alphabetically
-      const categories = Object.keys(defaultActions).sort();
+      // Get categories and keep original order
+      const categories = Object.keys(defaultActions);
 
       categories.forEach(category => {
         defaultHtml += `<h3 class="category-title">${category}</h3>`;
 
-        // Get actions in this category and sort them alphabetically by name
-        const actionsInCategory = Object.entries(defaultActions[category]).sort((a, b) => a[1].localeCompare(b[1]));
+        // Get actions in this category and keep original order
+        const actionsInCategory = Object.entries(defaultActions[category]);
 
         actionsInCategory.forEach(([action, name]) => {
           const shortcut = shortcuts[action] || '';
@@ -1310,6 +1348,7 @@
 
       // Custom action form
       document.getElementById('saveCustomBtn').addEventListener('click', saveCustomAction);
+      document.getElementById('saveCustomBtnGroup').addEventListener('click', saveCustomAction);
       document.getElementById('cancelCustomBtn').addEventListener('click', () => showPage('config'));
 
       // Ensure form inputs can be focused on addCustom page
@@ -1551,7 +1590,7 @@
       element.classList.add('listening');
 
       // Clear pressed keys and reset status bars
-      pressedKeys.clear();
+      pressedCodes.clear();
 
       // Show floating status bar with hint
       floatingStatusBar.classList.add('listening');
@@ -1579,7 +1618,7 @@
         listeningElement = null;
       }
 
-      pressedKeys.clear();
+      pressedCodes.clear();
 
       // Hide floating status bar
       if (delay) {
@@ -1673,6 +1712,7 @@
     // Handle key down
     function handleKeyDown(event) {
       const key = event.key.toLowerCase();
+      const code = event.code;
 
       // Don't handle keyboard events on addCustom page to allow form input
       if (currentPage === 'addCustom' && !isListening) {
@@ -1698,34 +1738,24 @@
         // Capture shortcut - track pressed keys
         event.preventDefault();
 
-        // Add modifier keys
-        if (event.metaKey) pressedKeys.add('cmd');
-        if (event.ctrlKey) pressedKeys.add('ctrl');
-        if (event.altKey) pressedKeys.add('alt');
-        if (event.shiftKey) pressedKeys.add('shift');
-
-        // Add regular key
-        if (key.length === 1 && key.match(/[a-z0-9]/)) {
-          pressedKeys.add(key);
-        } else if (['space', 'enter', 'tab'].includes(key)) {
-          pressedKeys.add(key);
-        } else if (key.startsWith('arrow')) {
-          pressedKeys.add(key.replace('arrow', ''));
-        } else if (key.startsWith('f') && key.length <= 3) {
-          pressedKeys.add(key);
+        // Add modifier keys (only add once)
+        if (event.metaKey) pressedCodes.add('cmd');
+        if (event.ctrlKey) pressedCodes.add('ctrl');
+        if (event.altKey) pressedCodes.add('alt');
+        if (event.shiftKey) pressedCodes.add('shift');
+        
+        // Add main key (only if not a modifier)
+        const modifierCodes = ['MetaLeft','MetaRight','ControlLeft','ControlRight','AltLeft','AltRight','ShiftLeft','ShiftRight'];
+        if (!modifierCodes.includes(code)) {
+          pressedCodes.add(code);
         }
 
         // Update status bars with current pressed keys
         updateListeningStatus();
 
         // Check if we have a valid shortcut (contains non-modifier key)
-        const hasNonModifierKey = Array.from(pressedKeys).some(key => {
-          const modifierKeys = ['cmd', 'ctrl', 'alt', 'shift', 'win', 'fn', 'capslock'];
-          return !modifierKeys.includes(key.toLowerCase());
-        });
-
-        // If we have a valid shortcut, capture it immediately (save data)
-        if (hasNonModifierKey) {
+        const hasNonModifier = Array.from(pressedCodes).some(c => !['cmd','ctrl','alt','shift'].includes(c));
+        if (hasNonModifier) {
           captureShortcut();
         }
       }
@@ -1762,82 +1792,57 @@
 
     // Handle key up
     function handleKeyUp(event) {
+      const code = event.code;
+
       // Don't handle keyboard events on addCustom page to allow form input
       if (currentPage === 'addCustom' && !isListening) {
         return;
       }
 
       if (isListening) {
-        event.preventDefault();
-
-        // Remove keys from pressedKeys set
-        const key = event.key.toLowerCase();
-        if (key.length === 1 && key.match(/[a-z0-9]/)) {
-          pressedKeys.delete(key);
-        } else if (['space', 'enter', 'tab'].includes(key)) {
-          pressedKeys.delete(key);
-        } else if (key.startsWith('arrow')) {
-          pressedKeys.delete(key.replace('arrow', ''));
-        } else if (key.startsWith('f') && key.length <= 3) {
-          pressedKeys.delete(key);
+        // 进入监听模式后第一次 keyup，不退出监听
+        if (justEnteredListening) {
+          justEnteredListening = false;
+          return;
         }
-
+        event.preventDefault();
+        // Remove code
+        pressedCodes.delete(code);
         // Remove modifier keys
-        if (!event.metaKey) pressedKeys.delete('cmd');
-        if (!event.ctrlKey) pressedKeys.delete('ctrl');
-        if (!event.altKey) pressedKeys.delete('alt');
-        if (!event.shiftKey) pressedKeys.delete('shift');
-
+        if (!event.metaKey) pressedCodes.delete('cmd');
+        if (!event.ctrlKey) pressedCodes.delete('ctrl');
+        if (!event.altKey) pressedCodes.delete('alt');
+        if (!event.shiftKey) pressedCodes.delete('shift');
         // Update status bars with current pressed keys
         updateListeningStatus();
-
-        // Check if we have a valid shortcut that was captured
-        const keys = Array.from(pressedKeys);
-        const modifierKeys = ['cmd', 'ctrl', 'alt', 'shift', 'win', 'fn', 'capslock'];
-        const hasNonModifierKey = keys.some(key => !modifierKeys.includes(key.toLowerCase()));
-
-        // If we have a valid shortcut (contains non-modifier key) OR if we're releasing a non-modifier key
-        if ((hasNonModifierKey && keys.length > 0) ||
-          (!modifierKeys.includes(key) && key.length === 1 && key.match(/[a-z0-9]/))) {
-          completeShortcutCapture();
-        }
+        // 只要有按键松开就退出监听
+        completeShortcutCapture();
       }
     }
 
     // Capture shortcut from pressed keys
     function captureShortcut() {
-      if (!isListening || !listeningElement || pressedKeys.size === 0) return;
+      if (!isListening || !listeningElement || pressedCodes.size === 0) return;
 
-      const keys = Array.from(pressedKeys);
-
-      // Check if shortcut contains only modifier keys
-      const modifierKeys = ['cmd', 'ctrl', 'alt', 'shift', 'win', 'fn', 'capslock'];
-      const isOnlyModifiers = keys.every(key => modifierKeys.includes(key.toLowerCase()));
-
+      const keys = Array.from(pressedCodes);
+      const modifierKeys = ['cmd','ctrl','alt','shift'];
+      const isOnlyModifiers = keys.every(k => modifierKeys.includes(k));
       if (isOnlyModifiers) {
-        // Show error and don't set shortcut
         const actionName = getActionName(listeningElement.dataset.action);
         updateStatus(`Invalid shortcut for: ${actionName}`, 'executed');
         updateStatus(`Setting shortcut for: ${actionName}`, 'listening');
-
-        pressedKeys.clear();
+        pressedCodes.clear();
         updateListeningStatus();
         return;
       }
-
       const shortcut = keys.join('+');
       let action = listeningElement.dataset.action;
-
-      // If we're on add custom action page, use the action ID from the button
       if (currentPage === 'addCustom') {
         action = document.getElementById('customShortcutBtn').dataset.action;
         listeningElement.dataset.action = action;
       }
-
       shortcuts[action] = shortcut;
       saveData();
-
-      // Send success notification to main thread
       const actionName = getActionName(action);
       parent.postMessage({
         pluginMessage: {
@@ -1845,28 +1850,15 @@
           actionName: actionName
         }
       }, '*');
-
-      // Update the listening element (current button being configured)
       if (listeningElement.textContent !== undefined) {
         listeningElement.innerHTML = renderShortcutKeys(shortcut);
         listeningElement.classList.add('has-shortcut');
         listeningElement.classList.remove('listening');
       }
-
-      // Update shortcuts list on main page
       renderShortcutsList();
-
-      // Update the specific button in config list if we're on config page
       if (currentPage === 'config') {
-        const action = listeningElement.dataset.action;
-
-        // Re-render the entire config list to update conflict states
         renderConfigList();
       }
-
-      // Don't update status bar here - keep showing current pressed keys
-      // The status will be updated to ready state on key up
-      // Don't clear pressedKeys or stop listening here - wait for key up
     }
 
     // Handle shortcut completion on key up
@@ -1877,7 +1869,7 @@
       updateStatus('Ready', 'ready');
 
       // Clear pressed keys and stop listening
-      pressedKeys.clear();
+      pressedCodes.clear();
       stopListening(false); // No delay, hide immediately
     }
 
@@ -1890,15 +1882,11 @@
       if (event.altKey) keys.push('alt');
       if (event.shiftKey) keys.push('shift');
 
-      const key = event.key.toLowerCase();
-      if (key.length === 1 && key.match(/[a-z0-9]/)) {
-        keys.push(key);
-      } else if (['space', 'enter', 'escape', 'tab', 'backspace'].includes(key)) {
-        keys.push(key);
-      } else if (key.startsWith('arrow')) {
-        keys.push(key.replace('arrow', ''));
-      } else if (key.startsWith('f') && key.length <= 3) {
-        keys.push(key);
+      // Use event.code for main key
+      const code = event.code;
+      const modifierCodes = ['MetaLeft','MetaRight','ControlLeft','ControlRight','AltLeft','AltRight','ShiftLeft','ShiftRight'];
+      if (!modifierCodes.includes(code)) {
+        keys.push(code);
       }
 
       return keys.length > 0 ? keys.join('+') : null;
@@ -1949,7 +1937,7 @@
     function updateListeningStatus() {
       if (!isListening) return;
 
-      const keys = Array.from(pressedKeys);
+      const keys = Array.from(pressedCodes);
       let keysDisplay = '';
 
       if (keys.length > 0) {
@@ -1969,6 +1957,8 @@
             return platform === 'mac' ? 'fn' : 'Fn';
           } else if (keyLower === 'capslock' || keyLower === 'caps') {
             return '⇪';
+          } else if (codeToDisplay[key]) {
+            return codeToDisplay[key];
           } else {
             return key.toUpperCase();
           }
@@ -2199,8 +2189,7 @@
             const conflictClass = hasConflict ? ' conflict' : '';
             const tooltipText = hasConflict ? getConflictTooltipText(action) : '';
 
-            categoryHtml += `
-              <div class="config-item shortcut-item${conflictClass}" data-action="${action}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
+            categoryHtml += `              <div class="config-item shortcut-item${conflictClass}" data-action="${action}"${tooltipText ? ` data-tooltip="${tooltipText}"` : ''}>
                 <div class="shortcut-name">${name}</div>
                 <button class="shortcut-button${hasShortcutClass}" data-action="${action}">${shortcutDisplay}</button>
               </div>
@@ -2287,7 +2276,10 @@
       listeningElement = { dataset: { action: action } }; // Create a mock element for compatibility
 
       // Clear pressed keys
-      pressedKeys.clear();
+      pressedCodes.clear();
+
+      // 进入监听模式，设置 justEnteredListening 标志
+      justEnteredListening = true;
 
       // Find the actual shortcut item on the main page and update its display
       const shortcutItem = document.querySelector(`#mainPage .shortcut-item[data-action="${action}"]`);

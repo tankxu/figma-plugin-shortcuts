@@ -13,48 +13,84 @@ interface PluginMessage {
   actionName?: string;
 }
 
-// Define categorized actions list
+/* === 1. NEW defaultActions ============================================ */
 const defaultActions = {
-  'Alignment': {
-    'alignItemsStart': 'Align Items Start',
-    'alignItemsCenter': 'Align Items Center',
-    'alignItemsEnd': 'Align Items End',
-    'justifyContentStart': 'Justify Content Start',
-    'justifyContentCenter': 'Justify Content Center',
-    'justifyContentEnd': 'Justify Content End',
-    'placeItemsCenter': 'Place Items Center',
-    'spaceBetween': 'Space Between'
+  Alignment: {
+    alignLeft: 'Align Left',
+    alignRight: 'Align Right',
+    alignTop: 'Align Top',
+    alignBottom: 'Align Bottom',
+    alignHorizontalCenter: 'Align Horizontal Center',
+    alignVerticalCenter: 'Align Vertical Center',
+    distributeHorizontal: 'Distribute Horizontally',
+    distributeVertical: 'Distribute Vertically'
   },
-  'Border & Stroke': {
-    'borderBox': 'Border Box',
-    'contentBox': 'Content Box',
-    'strokeAlignOutside': 'Stroke Align Outside',
-    'strokeAlignCenter': 'Stroke Align Center',
-    'strokeAlignInside': 'Stroke Align Inside'
+  'Auto-layout & Spacing': {
+    layoutHorizontal: 'Apply Auto-layout Horizontal',
+    layoutVertical: 'Apply Auto-layout Vertical',
+    tidyUp: 'Tidy Up',
+    gap0: 'Set Gap 0',
+    gap8: 'Set Gap 8',
+    gap16: 'Set Gap 16',
+    paddingUniform8: 'Padding 8'
+  },
+  Sizing: {
+    fullWidth: 'Full Width',
+    fullHeight: 'Full Height',
+    widthHug: 'Width Hug',
+    widthFill: 'Width Fill',
+    widthFixed: 'Width Fixed',
+    heightHug: 'Height Hug',
+    heightFill: 'Height Fill',
+    heightFixed: 'Height Fixed'
   },
   'Corner & Radius': {
-    'cornerSmoothingIos': 'Corner Smoothing as iOS',
-    'radiusFull': 'Radius Full'
+    radius0: 'Radius 0',
+    radius4: 'Radius 4',
+    radius8: 'Radius 8',
+    radius16: 'Radius 16',
+    radiusFull: 'Radius Full',
+    cornerSmoothingIos: 'iOS Corner Smoothing'
   },
-  'Layout': {
-    'layoutHorizontal': 'Layout Horizontal',
-    'layoutVertical': 'Layout Vertical'
+  'Border & Stroke': {
+    strokeAlignInside: 'Stroke Align Inside',
+    strokeAlignCenter: 'Stroke Align Center',
+    strokeAlignOutside: 'Stroke Align Outside',
+    borderBox: 'Border Box',
+    contentBox: 'Content Box',
+    swapFillStroke: 'Swap Fill/Stroke',
+    removeFill: 'Remove Fill',
+    removeStroke: 'Remove Stroke',
+    strokeWidthHalf: 'Stroke 0.5px'
   },
-  'Positioning': {
-    'absolute': 'Absolute Position',
-    'relative': 'Relative Position'
+  Text: {
+    fontSizeIncrease: 'Font Size +1',
+    fontSizeDecrease: 'Font Size -1',
+    letterSpacingIncrease: 'Letter Spacing +1',
+    letterSpacingDecrease: 'Letter Spacing -1',
+    lineHeightIncrease: 'Line Height +1',
+    lineHeightDecrease: 'Line Height -1',
+    textAlignLeft: 'Text Align Left',
+    textAlignCenter: 'Text Align Center',
+    textAlignRight: 'Text Align Right',
+    textAlignJustify: 'Text Align Justify'
   },
-  'Sizing': {
-    'fullWidth': 'Full Width',
-    'fullHeight': 'Full Height',
-    'widthHug': 'Width Hug',
-    'widthFill': 'Width Fill',
-    'widthFixed': 'Width Fixed',
-    'heightHug': 'Height Hug',
-    'heightFill': 'Height Fill',
-    'heightFixed': 'Height Fixed'
+  Positioning: {
+    absolute: 'Set Absolute Position',
+    relative: 'Set Relative Position',
+    flipHorizontal: 'Flip Horizontal',
+    flipVertical: 'Flip Vertical'
+  },
+  'Boolean & Vector': {
+    booleanUnion: 'Union Selection',
+    booleanSubtract: 'Subtract Selection',
+    booleanIntersect: 'Intersect Selection',
+    booleanExclude: 'Exclude Selection',
+    outlineStroke: 'Outline Stroke',
+    flattenSelection: 'Flatten Selection'
   }
 };
+/* ====================================================================== */
 
 // Utility function to safely access node properties
 function safeNodeAccess(node: SceneNode, requiredProperties: string[], callback: (node: any) => void) {
@@ -353,6 +389,242 @@ function placeItemsCenter() {
   alignItemsCenter();
 }
 
+/* === 2. INSERT new helper & action implementations ==================== */
+/* ---------- Additional action implementations ---------- */
+function alignLeft() {
+  const s = figma.currentPage.selection;
+  if (!s.length) return;
+  const minX = Math.min(...s.map(n => n.x));
+  s.forEach(n => (n.x = minX));
+}
+function alignHorizontalCenter() {
+  const s = figma.currentPage.selection;
+  if (!s.length) return;
+  const minX = Math.min(...s.map(n => n.x));
+  const maxX = Math.max(...s.map(n => n.x + n.width));
+  const mid = (minX + maxX) / 2;
+  s.forEach(n => (n.x = mid - n.width / 2));
+}
+function alignRight() {
+  const s = figma.currentPage.selection;
+  if (!s.length) return;
+  const maxX = Math.max(...s.map(n => n.x + n.width));
+  s.forEach(n => (n.x = maxX - n.width));
+}
+function alignTop() {
+  const s = figma.currentPage.selection;
+  if (!s.length) return;
+  const minY = Math.min(...s.map(n => n.y));
+  s.forEach(n => (n.y = minY));
+}
+function alignVerticalCenter() {
+  const s = figma.currentPage.selection;
+  if (!s.length) return;
+  const minY = Math.min(...s.map(n => n.y));
+  const maxY = Math.max(...s.map(n => n.y + n.height));
+  const mid = (minY + maxY) / 2;
+  s.forEach(n => (n.y = mid - n.height / 2));
+}
+function alignBottom() {
+  const s = figma.currentPage.selection;
+  if (!s.length) return;
+  const maxY = Math.max(...s.map(n => n.y + n.height));
+  s.forEach(n => (n.y = maxY - n.height));
+}
+function distributeHorizontal() {
+  const nodes = figma.currentPage.selection.slice().sort((a, b) => a.x - b.x);
+  if (nodes.length <= 2) return;
+  const first = nodes[0];
+  const last = nodes[nodes.length - 1];
+  const totalW = nodes.reduce((p, n) => p + n.width, 0);
+  const gap = (last.x + last.width - first.x - totalW) / (nodes.length - 1);
+  let cursor = first.x;
+  nodes.forEach(n => {
+    n.x = cursor;
+    cursor += n.width + gap;
+  });
+}
+function distributeVertical() {
+  const nodes = figma.currentPage.selection.slice().sort((a, b) => a.y - b.y);
+  if (nodes.length <= 2) return;
+  const first = nodes[0];
+  const last = nodes[nodes.length - 1];
+  const totalH = nodes.reduce((p, n) => p + n.height, 0);
+  const gap = (last.y + last.height - first.y - totalH) / (nodes.length - 1);
+  let cursor = first.y;
+  nodes.forEach(n => {
+    n.y = cursor;
+    cursor += n.height + gap;
+  });
+}
+function tidyUp() {
+  const s = figma.currentPage.selection;
+  if (s.length <= 2) return;
+  const wSpread =
+    Math.max(...s.map(n => n.x + n.width)) - Math.min(...s.map(n => n.x));
+  const hSpread =
+    Math.max(...s.map(n => n.y + n.height)) - Math.min(...s.map(n => n.y));
+  wSpread >= hSpread ? distributeHorizontal() : distributeVertical();
+}
+function gap(val: number) {
+  figma.currentPage.selection.forEach(n =>
+    safeNodeAccess(n, ['itemSpacing', 'layoutMode'], node => {
+      if (node.layoutMode !== 'NONE') node.itemSpacing = val;
+    })
+  );
+}
+function gap0() { gap(0); }
+function gap8() { gap(8); }
+function gap16() { gap(16); }
+function paddingUniform(val: number) {
+  figma.currentPage.selection.forEach(n =>
+    safeNodeAccess(
+      n,
+      ['paddingLeft', 'paddingRight', 'paddingTop', 'paddingBottom', 'layoutMode'],
+      node => {
+        if (node.layoutMode !== 'NONE') {
+          node.paddingLeft = node.paddingRight = node.paddingTop = node.paddingBottom = val;
+        }
+      }
+    )
+  );
+}
+function paddingUniform8() { paddingUniform(8); }
+function radius(val: number) {
+  figma.currentPage.selection.forEach(n =>
+    safeNodeAccess(n, ['cornerRadius'], node => {
+      node.cornerRadius = val;
+    })
+  );
+}
+function radius0() { radius(0); }
+function radius4() { radius(4); }
+function radius8() { radius(8); }
+function radius16() { radius(16); }
+function swapFillStroke() {
+  figma.currentPage.selection.forEach(n =>
+    safeNodeAccess(n, ['fills', 'strokes'], node => {
+      const f = node.fills;
+      node.fills = node.strokes;
+      node.strokes = f;
+    })
+  );
+}
+function removeFill() {
+  figma.currentPage.selection.forEach(n =>
+    safeNodeAccess(n, ['fills'], node => {
+      node.fills = [];
+    })
+  );
+}
+function removeStroke() {
+  figma.currentPage.selection.forEach(n =>
+    safeNodeAccess(n, ['strokes'], node => {
+      node.strokes = [];
+    })
+  );
+}
+function strokeWidth(width: number) {
+  figma.currentPage.selection.forEach(n =>
+    safeNodeAccess(n, ['strokes'], node => {
+      node.strokes = [{
+        type: 'SOLID',
+        color: { r: 0, g: 0, b: 0 },
+        opacity: 1,
+        width: width
+      }];
+    })
+  );
+}
+/* ------ text helpers ------ */
+async function adjustFontSize(delta: number) {
+  const texts = figma.currentPage.selection.filter(n => n.type === 'TEXT') as TextNode[];
+  for (const t of texts) {
+    await figma.loadFontAsync(t.fontName as FontName);
+    if (typeof t.fontSize === 'number') t.fontSize += delta;
+  }
+}
+async function fontSizeIncrease() { await adjustFontSize(1); }
+async function fontSizeDecrease() { await adjustFontSize(-1); }
+async function adjustLetterSpacing(delta: number) {
+  const texts = figma.currentPage.selection.filter(n => n.type === 'TEXT') as TextNode[];
+  for (const t of texts) {
+    await figma.loadFontAsync(t.fontName as FontName);
+    if (typeof t.letterSpacing === 'number') {
+      t.letterSpacing = { value: t.letterSpacing + delta, unit: 'PIXELS' };
+    }
+  }
+}
+async function letterSpacingIncrease() { await adjustLetterSpacing(1); }
+async function letterSpacingDecrease() { await adjustLetterSpacing(-1); }
+async function adjustLineHeight(delta: number) {
+  const texts = figma.currentPage.selection.filter(n => n.type === 'TEXT') as TextNode[];
+  for (const t of texts) {
+    await figma.loadFontAsync(t.fontName as FontName);
+    if (typeof t.lineHeight === 'number') {
+      t.lineHeight = { value: t.lineHeight + delta, unit: 'PIXELS' };
+    }
+  }
+}
+async function lineHeightIncrease() { await adjustLineHeight(1); }
+async function lineHeightDecrease() { await adjustLineHeight(-1); }
+async function setTextAlign(align: 'LEFT' | 'CENTER' | 'RIGHT' | 'JUSTIFIED') {
+  const texts = figma.currentPage.selection.filter(n => n.type === 'TEXT') as TextNode[];
+  for (const t of texts) {
+    await figma.loadFontAsync(t.fontName as FontName);
+    t.textAlignHorizontal = align;
+  }
+}
+async function textAlignLeft() { await setTextAlign('LEFT'); }
+async function textAlignCenter() { await setTextAlign('CENTER'); }
+async function textAlignRight() { await setTextAlign('RIGHT'); }
+async function textAlignJustify() { await setTextAlign('JUSTIFIED'); }
+/* ------ flip ------ */
+function flipHorizontal() {
+  figma.currentPage.selection.forEach(n => {
+    const m = n.relativeTransform;
+    m[0][0] *= -1;
+    m[0][2] += n.width;
+    n.relativeTransform = m;
+  });
+}
+function flipVertical() {
+  figma.currentPage.selection.forEach(n => {
+    const m = n.relativeTransform;
+    m[1][1] *= -1;
+    m[1][2] += n.height;
+    n.relativeTransform = m;
+  });
+}
+/* ------ boolean & vector ------ */
+function booleanUnion() {
+  if (figma.currentPage.selection.length >= 2)
+    figma.union(figma.currentPage.selection, figma.currentPage.selection[0].parent!);
+}
+function booleanSubtract() {
+  if (figma.currentPage.selection.length >= 2)
+    figma.subtract(figma.currentPage.selection, figma.currentPage.selection[0].parent!);
+}
+function booleanIntersect() {
+  if (figma.currentPage.selection.length >= 2)
+    figma.intersect(figma.currentPage.selection, figma.currentPage.selection[0].parent!);
+}
+function booleanExclude() {
+  if (figma.currentPage.selection.length >= 2)
+    figma.exclude(figma.currentPage.selection, figma.currentPage.selection[0].parent!);
+}
+function outlineStroke() {
+  figma.currentPage.selection.forEach(n =>
+    safeNodeAccess(n, ['outlineStroke'], node => node.outlineStroke())
+  );
+}
+function flattenSelection() {
+  if (figma.currentPage.selection.length >= 2)
+    figma.flatten(figma.currentPage.selection);
+}
+/* ---------- End additional implementations ---------- */
+/* ====================================================================== */
+
 // Get action name from default actions
 async function getActionName(action: string) {
   // Search through all categories to find the action
@@ -383,119 +655,145 @@ async function getActionName(action: string) {
 async function executeAction(action: string) {
   const selection = figma.currentPage.selection;
 
-  let processedCount = 0;
-  let errorCount = 0;
+  // let processedCount = 0;
+  // let errorCount = 0;
 
   try {
     switch (action) {
+      /* === 3. NEW switch‑cases in executeAction ============================= */
+      case 'alignLeft':
+        alignLeft(); break;
+      case 'alignHorizontalCenter':
+        alignHorizontalCenter(); break;
+      case 'alignRight':
+        alignRight(); break;
+      case 'alignTop':
+        alignTop(); break;
+      case 'alignVerticalCenter':
+        alignVerticalCenter(); break;
+      case 'alignBottom':
+        alignBottom(); break;
+      case 'distributeHorizontal':
+        distributeHorizontal(); break;
+      case 'distributeVertical':
+        distributeVertical(); break;
+      case 'tidyUp':
+        tidyUp(); break;
+      case 'gap0':
+        gap0(); break;
+      case 'gap8':
+        gap8(); break;
+      case 'gap16':
+        gap16(); break;
+      case 'paddingUniform8':
+        paddingUniform8(); break;
+      case 'radius0':
+        radius0(); break;
+      case 'radius4':
+        radius4(); break;
+      case 'radius8':
+        radius8(); break;
+      case 'radius16':
+        radius16(); break;
+      case 'swapFillStroke':
+        swapFillStroke(); break;
+      case 'removeFill':
+        removeFill(); break;
+      case 'removeStroke':
+        removeStroke(); break;
+      case 'fontSizeIncrease':
+        await fontSizeIncrease(); break;
+      case 'fontSizeDecrease':
+        await fontSizeDecrease(); break;
+      case 'letterSpacingIncrease':
+        await letterSpacingIncrease(); break;
+      case 'letterSpacingDecrease':
+        await letterSpacingDecrease(); break;
+      case 'lineHeightIncrease':
+        await lineHeightIncrease(); break;
+      case 'lineHeightDecrease':
+        await lineHeightDecrease(); break;
+      case 'textAlignLeft':
+        await textAlignLeft(); break;
+      case 'textAlignCenter':
+        await textAlignCenter(); break;
+      case 'textAlignRight':
+        await textAlignRight(); break;
+      case 'textAlignJustify':
+        await textAlignJustify(); break;
+      case 'flipHorizontal':
+        flipHorizontal(); break;
+      case 'flipVertical':
+        flipVertical(); break;
+      case 'booleanUnion':
+        booleanUnion(); break;
+      case 'booleanSubtract':
+        booleanSubtract(); break;
+      case 'booleanIntersect':
+        booleanIntersect(); break;
+      case 'booleanExclude':
+        booleanExclude(); break;
+      case 'outlineStroke':
+        outlineStroke(); break;
+      case 'flattenSelection':
+        flattenSelection(); break;
+      /* ====================================================================== */
       case 'fullWidth':
-        fullWidth();
-        processedCount = selection.length;
-        break;
+        fullWidth(); break;
       case 'fullHeight':
-        fullHeight();
-        processedCount = selection.length;
-        break;
+        fullHeight(); break;
       case 'strokeAlignOutside':
-        strokeAlignOutside();
-        processedCount = selection.length;
-        break;
+        strokeAlignOutside(); break;
       case 'strokeAlignCenter':
-        strokeAlignCenter();
-        processedCount = selection.length;
-        break;
+        strokeAlignCenter(); break;
       case 'strokeAlignInside':
-        strokeAlignInside();
-        processedCount = selection.length;
-        break;
+        strokeAlignInside(); break;
       case 'cornerSmoothingIos':
-        cornerSmoothingIos();
-        processedCount = selection.length;
-        break;
+        cornerSmoothingIos(); break;
+      case 'strokeWidthHalf':
+        strokeWidth(0.5); break;
       case 'radiusFull':
-        radiusFull();
-        processedCount = selection.length;
-        break;
+        radiusFull(); break;
       case 'layoutHorizontal':
-        layoutHorizontal();
-        processedCount = selection.length;
-        break;
+        layoutHorizontal(); break;
       case 'layoutVertical':
-        layoutVertical();
-        processedCount = selection.length;
-        break;
+        layoutVertical(); break;
       case 'spaceBetween':
-        spaceBetween();
-        processedCount = selection.length;
-        break;
+        spaceBetween(); break;
       case 'justifyContentStart':
-        justifyContentStart();
-        processedCount = selection.length;
-        break;
+        justifyContentStart(); break;
       case 'justifyContentCenter':
-        justifyContentCenter();
-        processedCount = selection.length;
-        break;
+        justifyContentCenter(); break;
       case 'justifyContentEnd':
-        justifyContentEnd();
-        processedCount = selection.length;
-        break;
+        justifyContentEnd(); break;
       case 'alignItemsStart':
-        alignItemsStart();
-        processedCount = selection.length;
-        break;
+        alignItemsStart(); break;
       case 'alignItemsCenter':
-        alignItemsCenter();
-        processedCount = selection.length;
-        break;
+        alignItemsCenter(); break;
       case 'alignItemsEnd':
-        alignItemsEnd();
-        processedCount = selection.length;
-        break;
+        alignItemsEnd(); break;
       case 'widthHug':
-        widthHug();
-        processedCount = selection.length;
-        break;
+        widthHug(); break;
       case 'widthFill':
-        widthFill();
-        processedCount = selection.length;
-        break;
+        widthFill(); break;
       case 'widthFixed':
-        widthFixed();
-        processedCount = selection.length;
-        break;
+        widthFixed(); break;
       case 'heightHug':
-        heightHug();
-        processedCount = selection.length;
-        break;
+        heightHug(); break;
       case 'heightFill':
-        heightFill();
-        processedCount = selection.length;
-        break;
+        heightFill(); break;
       case 'heightFixed':
-        heightFixed();
-        processedCount = selection.length;
-        break;
+        heightFixed(); break;
       case 'contentBox':
-        contentBox();
-        processedCount = selection.length;
-        break;
+        contentBox(); break;
       case 'borderBox':
-        borderBox();
-        processedCount = selection.length;
-        break;
+        borderBox(); break;
       case 'absolute':
-        absolute();
-        processedCount = selection.length;
-        break;
+        absolute(); break;
       case 'relative':
-        relative();
-        processedCount = selection.length;
-        break;
+        relative(); break;
       case 'placeItemsCenter':
-        placeItemsCenter();
-        processedCount = selection.length;
-        break;
+        placeItemsCenter(); break;
       default:
         // Check if it's a custom action
         if (action.startsWith('custom_')) {
@@ -511,25 +809,17 @@ async function executeAction(action: string) {
     return { success: false, message: `Error executing ${actionName}: ${errorMessage}` };
   }
 
-  if (processedCount === 0) {
-    if (selection.length === 0) {
-      return {
-        success: false,
-        message: "No layers selected"
-      };
-    } else {
-      const actionName = await getActionName(action);
-      return {
-        success: false,
-        message: `Cannot apply ${actionName} to selected layers`
-      };
-    }
+  if (selection.length === 0) {
+    return {
+      success: false,
+      message: "No layers selected"
+    };
   }
 
   const actionName = await getActionName(action);
   return {
     success: true,
-    message: `Applied ${actionName} to ${processedCount} layer(s)${errorCount > 0 ? ` (${errorCount} failed)` : ''}`
+    message: `Applied ${actionName}`
   };
 }
 
