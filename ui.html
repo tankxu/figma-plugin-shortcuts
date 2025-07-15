@@ -849,7 +849,7 @@
 <body>
   <div class="container">
     <div class="floating-status-bar" id="floatingStatusBar">
-      <p class="floating-status-bar-title">Press keys to set shortcut</p>
+      <p class="floating-status-bar-title"></p>
       <p class="floating-status-bar-description">Press ESC to cancel, DELETE to remove shortcut</p>
     </div>
 
@@ -858,7 +858,7 @@
       <div class="status-bar-container" id="statusBar">
         <div class="status-bar ready">
           <p class="status-bar-title">Capturing Keys<span class="dots-animation"></span></p>
-          <p class="status-bar-description">Press shortcuts to run actions</p>
+          <p class="status-bar-description">Press shortcuts to run actions • ⌘+Click to configure</p>
         </div>
       </div>
       <div class="content">
@@ -1296,7 +1296,7 @@
       // Event delegation for dynamic buttons
       document.addEventListener('click', (e) => {
         if (e.target.classList.contains('shortcut-button')) {
-          startListening(e.target);
+          startListening(e.target, false); // 配置页按钮点击，不忽略 first keyup
         } else if (e.target.id === 'configureBtn') {
           showPage('config');
         } else if (e.target.closest('.shortcut-item') && currentPage === 'main') {
@@ -1307,7 +1307,7 @@
           const shortcutItem = e.target.closest('.shortcut-item');
           const button = shortcutItem.querySelector('.shortcut-button');
           if (button) {
-            startListening(button);
+            startListening(button, true); 
           }
         } else if (
           e.target.closest('.shortcut-item.custom-action') &&
@@ -1368,7 +1368,7 @@
 
       // Focus management
       document.addEventListener('click', (e) => {
-        // 只在首页且未在设置快捷键时自动 focus
+        // only focus on main page and not in setting shortcut
         const searchContent = document.querySelector('.search-content');
         if (
           currentPage === 'main' &&
@@ -1581,7 +1581,7 @@
     }
 
     // Start listening for shortcut
-    function startListening(element) {
+    function startListening(element, ignoreFirstKeyup = false) {
       if (isListening) return;
 
       isListening = true;
@@ -1591,6 +1591,9 @@
 
       // Clear pressed keys and reset status bars
       pressedCodes.clear();
+
+      // enter listening mode, set justEnteredListening flag
+      justEnteredListening = ignoreFirstKeyup;
 
       // Show floating status bar with hint
       floatingStatusBar.classList.add('listening');
@@ -1800,7 +1803,7 @@
       }
 
       if (isListening) {
-        // 进入监听模式后第一次 keyup，不退出监听
+        // if just entered listening mode, don't exit
         if (justEnteredListening) {
           justEnteredListening = false;
           return;
@@ -1815,7 +1818,7 @@
         if (!event.shiftKey) pressedCodes.delete('shift');
         // Update status bars with current pressed keys
         updateListeningStatus();
-        // 只要有按键松开就退出监听
+        // exit listening mode if any key is released
         completeShortcutCapture();
       }
     }
@@ -2278,7 +2281,7 @@
       // Clear pressed keys
       pressedCodes.clear();
 
-      // 进入监听模式，设置 justEnteredListening 标志
+      // enter listening mode, set justEnteredListening flag
       justEnteredListening = true;
 
       // Find the actual shortcut item on the main page and update its display
