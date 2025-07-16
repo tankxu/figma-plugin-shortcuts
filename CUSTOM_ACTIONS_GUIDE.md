@@ -19,6 +19,7 @@ Custom Actions 功能允许你创建自定义的 Figma 操作，通过快捷键�
 你的函数将接收两个参数：
 - `figma`: Figma API 对象
 - `selection`: 当前选中的节点数组
+- `await loadFonts()`: 加载选中图层中的字体，接受一个 node 参数，默认是 selection
 
 ### 示例代码
 
@@ -57,6 +58,8 @@ selection.forEach(node => {
 
 #### 4. 设置字体大小
 ```javascript
+await loadFonts(); // Plugin preset function
+
 selection.forEach(node => {
   if ('fontSize' in node) {
     node.fontSize = 16;

@@ -93,7 +93,7 @@
       overflow: hidden;
     }
 
-    /* ========== 重构后的 Status Bar 样式 ========== */
+    /* ========== Status Bar ========== */
     .status-bar-container {
       padding: 0;
     }
@@ -126,10 +126,17 @@
       border: 0.5px solid var(--figma-color-border-success);
     }
 
-    .status-bar.listening-set {
+    .status-bar.listening-set,
+    .status-bar.notify {
       background: var(--figma-color-bg-brand-tertiary);
       color: var(--figma-color-bg-brand-secondary);
       border: 0.5px solid var(--figma-color-border-brand);
+    }
+
+    .status-bar.warning {
+      background: var(--figma-color-bg-warning-tertiary);
+      color: var(--figma-color-bg-warning-secondary);
+      border: 0.5px solid var(--figma-color-border-warning);
     }
 
     /* Floating Status Bar for Config Page */
@@ -152,6 +159,13 @@
       margin: 0;
     }
 
+    .status-bar.warning .status-bar-title,
+    .status-bar.notify .status-bar-title {
+      font-size: 13px;
+      font-weight: 450 !important;
+      line-height: 140%;
+    }
+
     .status-bar-description {
       font-size: 11px;
       margin: 0;
@@ -163,7 +177,7 @@
       text-align: left;
     }
 
-   .dots-animation::after {
+    .dots-animation::after {
       content: "...";
       animation: dotsContent 1s infinite;
     }
@@ -216,7 +230,6 @@
       gap: 0;
     }
 
-    /* 主页面特殊布局 */
     #mainPage {
       flex: 1;
       min-height: 0;
@@ -324,7 +337,8 @@
       background-color: var(--figma-color-bg-hover);
     }
 
-    .shortcut-card.clickable:hover .key-text, .shortcut-card.clickable:hover .action-button {
+    .shortcut-card.clickable:hover .key-text,
+    .shortcut-card.clickable:hover .action-button {
       background-color: var(--figma-color-text-onbrand);
     }
 
@@ -333,7 +347,7 @@
       border: 1px solid var(--figma-color-border-warning-strong);
     }
 
-    /* ==========  Set Shortcut Button 样式 ========== */
+    /* ==========  Set Shortcut Button  ========== */
     .shortcut-button {
       display: flex;
       align-items: center;
@@ -795,7 +809,7 @@
       font-size: 11px;
       color: var(--figma-color-bg-brand);
       font-weight: 450;
-      background: color-mix(in srgb, var(--figma-color-bg-brand-tertiary), transparent 60%);
+      background: color-mix(in srgb, var(--figma-color-bg-brand-tertiary), transparent 20%);
       border: 0.5px solid var(--figma-color-border-brand);
       box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
       border-radius: 99999px;
@@ -871,6 +885,13 @@
     .tooltip.show {
       opacity: 1;
     }
+
+    #corner {
+      position: absolute;
+      right: 1px;
+      bottom: 2px;
+      cursor: nwse-resize;
+    }
   </style>
 </head>
 
@@ -879,12 +900,12 @@
     <div class="status-bar-container" id="statusBarContainer">
       <div class="status-bar wait-action" id="statusBar">
         <p class="status-bar-title">Capturing Keys<span class="dots-animation"></span></p>
-        <p class="status-bar-description">Press shortcuts to run actions • ⌘+Click to configure</p>
+        <p class="status-bar-description">Press shortcuts / Click to run • ⌘+Click to configure</p>
       </div>
     </div>
     <div class="footer-info-container hidden">
       <div class="footer-info" id="footerInfo">
-        <p>⌘+Click to set shortcut</p>
+        <p>Click to run action • ⌘+Click to set shortcut</p>
       </div>
     </div>
     <!-- Main page -->
@@ -1018,12 +1039,26 @@
       </div>
     </div>
 
+    <svg id="corner" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+      <g clip-path="url(#a)">
+        <path stroke="#fff" stroke-opacity=".7" d="m17.354 1.354-16 16" />
+        <path stroke="var(--figma-color-text)" stroke-opacity=".5" stroke-width=".5" d="m17.177 1.177-16 16" />
+        <path stroke="#fff" stroke-opacity=".5" d="m19.354 4.354-16 16" />
+        <path stroke="var(--figma-color-text)" stroke-opacity=".4" stroke-width=".5" d="m19.177 4.177-16 16" />
+      </g>
+      <defs>
+        <clipPath id="a">
+          <path fill="#fff" d="M0 0h14v14H0z" />
+        </clipPath>
+      </defs>
+    </svg>
+
     <!-- Hidden input for capturing keyboard events -->
     <input type="text" id="focusable" tabindex="0">
   </div>
 
   <script>
-    // ========== 重构后的全局状态 ==========
+    // ========== Refactored Global State ==========
     let currentPage = 'main';
     let currentTab = 'default';
     let shortcuts = {};
@@ -1032,13 +1067,16 @@
     let isListening = false;
     let listeningActionId = null;
     let platform = 'mac';
-    let pressedCodes = new Set(); // 累积显示的按键
-    let currentlyPressed = new Set(); // 当前物理按下的按键
+    let pressedCodes = new Set(); // Accumulated keys for display
+    let currentlyPressed = new Set(); // Currently physically pressed keys
     let currentEditingActionId = null;
     let ignoreFirstKeyUp = false;
     let delayTimer = null;
-    let shortcutSaved = false; // 是否已保存快捷键
-    let tempShortcuts = {}; // 临时快捷键存储
+    let shortcutSaved = false; // Whether the shortcut has been saved
+    let tempShortcuts = {}; // Temporary shortcut storage
+    // footerInfo related
+    let isCmdDown = false;
+    let isAltDown = false;
 
     // DOM elements
     const statusBarContainer = document.getElementById('statusBarContainer');
@@ -1051,8 +1089,10 @@
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
     const pages = document.querySelectorAll('.page');
+    const footerInfoContainer = document.querySelector('.footer-info-container');
+    const footerInfo = document.getElementById('footerInfo');
 
-    // ========== 1. Code 到 Key 显示映射函数 ==========
+    // ========== 1. Code to Key Display Mapping Function ==========
     const codeToKeyMap = {
       // Numbers
       'Digit0': '0', 'Digit1': '1', 'Digit2': '2', 'Digit3': '3', 'Digit4': '4',
@@ -1083,12 +1123,12 @@
     };
 
     /**
-     * 将 code 转换为用户友好的显示字符
-     * @param {string} code - 键盘事件的 code
-     * @returns {string} 用户友好的显示字符
+     * Convert code to user-friendly display character
+     * @param {string} code - Keyboard event code
+     * @returns {string} User-friendly display character
      */
     function codeToDisplayKey(code) {
-      // 修饰键处理
+      // Modifier key handling
       if (code === 'cmd' || code === 'command') return '⌘';
       if (code === 'ctrl' || code === 'control') return platform === 'mac' ? '⌃' : 'Ctrl';
       if (code === 'alt' || code === 'option') return platform === 'mac' ? '⌥' : 'Alt';
@@ -1097,24 +1137,24 @@
       if (code === 'fn' || code === 'function') return platform === 'mac' ? 'fn' : 'Fn';
       if (code === 'capslock' || code === 'caps') return '⇪';
 
-      // 使用映射表
+      // Use mapping table
       return codeToKeyMap[code] || code.toUpperCase();
     }
 
-    // ========== 2. 统一的 Shortcut Card 组件 ==========
+    // ========== 2. Unified Shortcut Card Component ==========
     /**
-     * 创建快捷键卡片组件
-     * @param {Object} options - 配置选项
-     * @param {string} options.actionId - 动作 ID
-     * @param {string} options.actionName - 动作名称
-     * @param {string} options.shortcut - 快捷键字符串
-     * @param {boolean} options.isCustomAction - 是否为自定义动作
-     * @param {boolean} options.hasConflict - 是否有冲突
-     * @param {string} options.tooltipText - 提示文本
-     * @param {Function} options.onCardClick - 卡片点击回调
-     * @param {boolean} options.allowCommandClick - 是否允许命令点击
-     * @param {boolean} options.allowSetShortcut - 是否允许设置快捷键
-     * @returns {string} HTML 字符串
+     * Create shortcut card component
+     * @param {Object} options - Config options
+     * @param {string} options.actionId - Action ID
+     * @param {string} options.actionName - Action name
+     * @param {string} options.shortcut - Shortcut string
+     * @param {boolean} options.isCustomAction - Is custom action
+     * @param {boolean} options.hasConflict - Has conflict
+     * @param {string} options.tooltipText - Tooltip text
+     * @param {Function} options.onCardClick - Card click callback
+     * @param {boolean} options.allowCommandClick - Allow command click
+     * @param {boolean} options.allowSetShortcut - Allow set shortcut
+     * @returns {string} HTML string
      */
     function createShortcutCard(options) {
       const {
@@ -1147,28 +1187,28 @@
     }
 
     /**
-     * 获取快捷键（从正式存储或临时存储）
-     * @param {string} actionId - 动作 ID
-     * @returns {string} 快捷键字符串
+     * Get shortcut (from official or temporary storage)
+     * @param {string} actionId - Action ID
+     * @returns {string} Shortcut string
      */
     function getShortcut(actionId) {
       return tempShortcuts[actionId] || shortcuts[actionId] || '';
     }
 
     /**
-     * 创建设置快捷键按钮组件
-     * @param {Object} options - 配置选项
-     * @param {string} options.actionId - 动作 ID
-     * @param {string} options.shortcut - 快捷键字符串
-     * @param {boolean} options.allowSetShortcut - 是否允许设置快捷键
-     * @returns {string} HTML 字符串
+     * Create set shortcut button component
+     * @param {Object} options - Config options
+     * @param {string} options.actionId - Action ID
+     * @param {string} options.shortcut - Shortcut string
+     * @param {boolean} options.allowSetShortcut - Allow set shortcut
+     * @returns {string} HTML string
      */
     function createSetShortcutButton(options) {
       const { actionId, shortcut, allowSetShortcut } = options;
 
       const hasShortcut = shortcut && shortcut.length > 0;
       const state = hasShortcut ? 'state-set' : 'state-empty';
-      // 始终可点击，通过 CSS pointer-events 控制
+      // Always clickable, controlled via CSS pointer-events
 
       return `
         <div class="shortcut-button ${state} clickable ${allowSetShortcut ? '' : 'disabled'}" data-action="${actionId}">
@@ -1179,9 +1219,9 @@
     }
 
     /**
-     * 渲染快捷键显示
-     * @param {string} shortcut - 快捷键字符串
-     * @returns {string} HTML 字符串
+     * Render shortcut display
+     * @param {string} shortcut - Shortcut string
+     * @returns {string} HTML string
      */
     function renderShortcutKeys(shortcut) {
       if (!shortcut) return '';
@@ -1190,32 +1230,32 @@
       return keys.map(key => `<span class="key-text">${codeToDisplayKey(key)}</span>`).join('');
     }
 
-    // ========== 3. 统一的 Status Bar 组件 ==========
+    // ========== 3. Unified Status Bar Component ==========
     /**
-     * 更新状态栏
-     * @param {string} state - 状态 ('wait-action' | 'listening-set')
-     * @param {string} title - 标题
-     * @param {string} description - 描述
-     * @param {boolean} isFloat - 是否为浮动样式
+     * Update status bar
+     * @param {string} state - State ('wait-action' | 'listening-set' | 'warning')
+     * @param {string} title - Title
+     * @param {string} description - Description
+     * @param {boolean} isFloat - Is floating style
      */
     function updateStatusBar(state, title, description, isFloat = false) {
       const statusBarEl = statusBar;
       const titleEl = statusBarEl.querySelector('.status-bar-title');
       const descEl = statusBarEl.querySelector('.status-bar-description');
 
-      // 更新状态类
+      // Update state class
       statusBarEl.className = `status-bar ${state}${isFloat ? ' float' : ''}`;
 
-      // 更新内容
+      // Update content
       titleEl.innerHTML = title;
       descEl.textContent = description;
     }
 
-    // ========== 4. Set Shortcut 函数 ==========
+    // ========== 4. Set Shortcut Function ==========
     /**
-     * 开始设置快捷键
-     * @param {string} actionId - 动作 ID
-     * @param {boolean} commandTriggered - 是否由命令点击触发
+     * Start setting shortcut
+     * @param {string} actionId - Action ID
+     * @param {boolean} commandTriggered - Whether triggered by command click
      */
     function startSetShortcut(actionId, commandTriggered = false) {
       if (isListening) return;
@@ -1223,11 +1263,11 @@
       isListening = true;
       listeningActionId = actionId;
       ignoreFirstKeyUp = commandTriggered;
-      shortcutSaved = false; // 初始化保存状态
+      shortcutSaved = false; // Initialize save status
       pressedCodes.clear();
       currentlyPressed.clear();
 
-      // 更新按钮状态
+      // Update button state
       const button = document.querySelector(`[data-action="${actionId}"] .shortcut-button`);
       if (button) {
         button.className = 'shortcut-button state-listening clickable';
@@ -1238,7 +1278,7 @@
         }
       }
 
-      // 特别处理自定义动作页面中的快捷键按钮
+      // Special handling for shortcut button on custom action page
       if (currentPage === 'addCustom') {
         const customShortcutButton = document.querySelector('#customShortcutBtn .shortcut-button');
         if (customShortcutButton && customShortcutButton.dataset.action === actionId) {
@@ -1251,12 +1291,12 @@
         }
       }
 
-      // 更新状态栏
+      // Update status bar
       const actionName = getActionName(actionId);
       const isFloat = currentPage === 'config' || currentPage === 'addCustom';
       updateStatusBar('listening-set', `Press keys to set shortcut<span class="dots-animation"></span>`, 'ESC to cancel • DELETE to remove', isFloat);
 
-      // 在配置页面和自定义页面显示浮动状态栏
+      // Show floating status bar on config and custom pages
       if (currentPage === 'config' || currentPage === 'addCustom') {
         statusBarContainer.classList.remove('hidden');
         statusBar.classList.add('float');
@@ -1266,7 +1306,7 @@
     }
 
     /**
-     * 停止设置快捷键
+     * Stop setting shortcut
      */
     function stopSetShortcut() {
       if (!isListening) return;
@@ -1275,19 +1315,19 @@
       const actionId = listeningActionId;
       listeningActionId = null;
       ignoreFirstKeyUp = false;
-      shortcutSaved = false; // 重置保存状态
-      pressedCodes.clear(); // 清空累积的按键
-      currentlyPressed.clear(); // 清空当前按下的按键
+      shortcutSaved = false; // Reset save status
+      pressedCodes.clear(); // Clear accumulated keys
+      currentlyPressed.clear(); // Clear currently pressed keys
 
       if (delayTimer) {
         clearTimeout(delayTimer);
         delayTimer = null;
       }
 
-      // 恢复按钮状态
+      // Restore button state
       updateShortcutButton(actionId);
 
-      // 恢复状态栏
+      // Restore status bar
       if (currentPage === 'main') {
         updateStatusBar('wait-action', 'Capturing Keys<span class="dots-animation"></span>', 'Press shortcuts to run actions • ⌘+Click to configure');
       } else if (currentPage === 'config' || currentPage === 'addCustom') {
@@ -1296,19 +1336,19 @@
       }
     }
 
-    // ========== 辅助函数 ==========
+    // ========== Helper Functions ==========
     /**
-     * 获取动作名称
+     * Get action name
      */
     function getActionName(actionId) {
-      // 搜索默认动作
+      // Search default actions
       for (const category in defaultActions) {
         if (defaultActions[category][actionId]) {
           return defaultActions[category][actionId];
         }
       }
 
-      // 搜索自定义动作
+      // Search custom actions
       const customAction = customActions.find(a => a.id === actionId);
       if (customAction) {
         return customAction.name;
@@ -1318,20 +1358,20 @@
     }
 
     /**
-     * 检查是否为自定义动作
+     * Check if is custom action
      */
     function isCustomAction(actionId) {
       return actionId.startsWith('custom_');
     }
 
     /**
-     * 检测快捷键冲突
+     * Detect shortcut conflicts
      */
     function detectShortcutConflicts() {
       const conflicts = {};
       const shortcutToActions = {};
 
-      // 构建快捷键到动作的映射
+      // Build shortcut to action mapping
       for (const [action, shortcut] of Object.entries(shortcuts)) {
         if (shortcut) {
           if (!shortcutToActions[shortcut]) {
@@ -1341,7 +1381,7 @@
         }
       }
 
-      // 查找冲突
+      // Find conflicts
       for (const [shortcut, actions] of Object.entries(shortcutToActions)) {
         if (actions.length > 1) {
           for (const action of actions) {
@@ -1354,7 +1394,7 @@
     }
 
     /**
-     * 获取冲突提示文本
+     * Get conflict tooltip text
      */
     function getConflictTooltipText(action) {
       const conflicts = detectShortcutConflicts();
@@ -1369,7 +1409,7 @@
     }
 
     /**
-     * 平台检测
+     * Platform detection
      */
     function detectPlatform() {
       const userAgent = navigator.userAgent.toLowerCase();
@@ -1383,9 +1423,9 @@
       document.body.className = `platform-${platform}`;
     }
 
-    // ========== 渲染函数 ==========
+    // ========== Render Functions ==========
     /**
-     * 渲染快捷键列表（主页面）
+     * Render shortcuts list (main page)
      */
     function renderShortcutsList() {
       const hasShortcuts = Object.keys(shortcuts).length > 0;
@@ -1412,9 +1452,9 @@
         </button>
       </div>`;
 
-      // 反转快捷键列表，让新增的显示在最上面
+      // reverse shortcuts list, show new shortcuts on top
       const shortcutEntries = Object.entries(shortcuts).reverse();
-      
+
       for (const [action, shortcut] of shortcutEntries) {
         const actionName = getActionName(action);
         const isCustom = isCustomAction(action);
@@ -1428,9 +1468,9 @@
           isCustomAction: isCustom,
           hasConflict: hasConflict,
           tooltipText: tooltipText,
-          onCardClick: true, // 主页面允许点击执行
+          onCardClick: true, // main page allows click to run action
           allowCommandClick: true,
-          allowSetShortcut: false // 主页面不显示设置按钮
+          allowSetShortcut: false // main page does not show set shortcut button
         });
       }
 
@@ -1438,12 +1478,12 @@
     }
 
     /**
-     * 渲染配置列表（配置页面）
+     * Render config list (config page)
      */
     function renderConfigList() {
       const conflicts = detectShortcutConflicts();
 
-      // 渲染默认动作
+      // render default actions
       let defaultHtml = '';
       const categories = Object.keys(defaultActions);
 
@@ -1464,7 +1504,7 @@
             isCustomAction: false,
             hasConflict: hasConflict,
             tooltipText: tooltipText,
-            onCardClick: null, // 配置页面不允许点击执行
+            onCardClick: null, // config page does not allow click to run action
             allowCommandClick: true,
             allowSetShortcut: true
           });
@@ -1473,7 +1513,7 @@
 
       document.getElementById('defaultConfigList').innerHTML = defaultHtml;
 
-      // 渲染自定义动作
+      // render custom actions
       let customHtml = '';
       customActions.forEach(action => {
         const shortcut = shortcuts[action.id] || '';
@@ -1487,7 +1527,7 @@
           isCustomAction: true,
           hasConflict: hasConflict,
           tooltipText: tooltipText,
-          onCardClick: () => editCustomAction(action.id), // 自定义动作点击编辑
+          onCardClick: () => editCustomAction(action.id), // custom action click to edit
           allowCommandClick: true,
           allowSetShortcut: true
         });
@@ -1496,12 +1536,15 @@
       document.getElementById('customConfigList').innerHTML = customHtml;
     }
 
-    // ========== 页面管理 ==========
+    // ========== Page Management ==========
     /**
-     * 显示页面
+     * Show page
      */
     function showPage(pageName) {
       pages.forEach(page => page.classList.remove('active'));
+
+      // Reset footerInfo when switching page
+      hideFooterInfo();
 
       switch (pageName) {
         case 'main':
@@ -1510,24 +1553,24 @@
           statusBarContainer.classList.remove('hidden');
           updateStatusBar('wait-action', 'Capturing Keys<span class="dots-animation"></span>', 'Press shortcuts to run actions • ⌘+Click to configure');
           renderShortcutsList();
+          // mainPage footerInfo text
           break;
         case 'config':
           document.getElementById('configPage').classList.add('active');
           currentPage = 'config';
-          // 只有在非监听状态时才隐藏statusbar
           if (!isListening) {
             statusBarContainer.classList.add('hidden');
           }
           renderConfigList();
+          // configPage footerInfo text
           break;
         case 'addCustom':
           document.getElementById('addCustomPage').classList.add('active');
           currentPage = 'addCustom';
           statusBarContainer.classList.add('hidden');
-
           if (!currentEditingActionId) {
             clearCustomForm();
-            clearTempShortcuts(); // 清理临时快捷键
+            clearTempShortcuts();
             const customId = 'custom_' + Date.now();
             const customShortcutContainer = document.getElementById('customShortcutBtn');
             customShortcutContainer.innerHTML = createSetShortcutButton({
@@ -1537,9 +1580,10 @@
             });
           }
           updateCustomFormActions();
+          // addCustomPage does not show footerInfo
+          hideFooterInfo();
           break;
       }
-
       setTimeout(() => {
         const searchContent = document.querySelector('.search-content');
         if (
@@ -1553,7 +1597,7 @@
     }
 
     /**
-     * 切换标签
+     * Switch tab
      */
     function switchTab(tabName) {
       tabs.forEach(tab => tab.classList.remove('active'));
@@ -1565,29 +1609,29 @@
       currentTab = tabName;
     }
 
-    // ========== 5. 快捷键业务逻辑 ==========
+    // ========== 5. Listen Key Function ==========
     /**
-     * 处理按键按下
+     * Handle keydown
      */
     function handleKeyDown(event) {
       const key = event.key.toLowerCase();
       const code = event.code;
 
-      // 在 addCustom 页面且不在监听状态时，允许表单输入
+      // Allow form input on addCustom page when not listening
       if (currentPage === 'addCustom' && !isListening) {
         return;
       }
 
-      // 监听状态处理
+      // On keydown
       if (isListening) {
-        // ESC 取消
+        // ESC cancel
         if (key === 'escape') {
           event.preventDefault();
           cancelSetShortcut();
           return;
         }
 
-        // DELETE 删除快捷键
+        // DELETE remove shortcut
         if (key === 'delete' || key === 'backspace') {
           event.preventDefault();
           deleteShortcut();
@@ -1597,13 +1641,13 @@
         event.preventDefault();
         console.log('KeyDown:', code, 'metaKey:', event.metaKey, 'currentlyPressed before:', Array.from(currentlyPressed));
 
-        // 清除延迟计时器
+        // Clear delay timer
         if (delayTimer) {
           clearTimeout(delayTimer);
           delayTimer = null;
         }
 
-        // 添加修饰键到两个集合
+        // Add modifier keys to both sets
         if (event.metaKey) {
           pressedCodes.add('cmd');
           currentlyPressed.add('cmd');
@@ -1621,34 +1665,34 @@
           currentlyPressed.add('shift');
         }
 
-        // 添加主键（非修饰键）
+        // Add main key (non-modifier)
         const modifierCodes = ['MetaLeft', 'MetaRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'ShiftLeft', 'ShiftRight'];
         if (!modifierCodes.includes(code)) {
-          pressedCodes.add(code); // 累积显示
-          currentlyPressed.add(code); // 当前按下
+          pressedCodes.add(code); // Accumulated for display
+          currentlyPressed.add(code); // Currently pressed
         }
 
         console.log('KeyDown currentlyPressed after:', Array.from(currentlyPressed));
 
-        // 实时更新状态栏显示（显示所有按过的键）
+        // Real-time update of status bar display (show all pressed keys)
         updateListeningStatusBar();
 
-        // 检查是否有非修饰键
+        // Check if there is a non-modifier key
         const allCodes = Array.from(pressedCodes);
         const nonModifierCodes = allCodes.filter(c => !['cmd', 'ctrl', 'alt', 'shift'].includes(c));
         const modifierCodes_check = allCodes.filter(c => ['cmd', 'ctrl', 'alt', 'shift'].includes(c));
 
         if (nonModifierCodes.length > 0) {
           if (nonModifierCodes.length === 1) {
-            // 有一个主键，立即保存（无论是否有修饰键）
+            // If has one main key, save immediately (regardless of modifiers)
             captureShortcut();
           } else {
-            // 多个主键，无效组合
-            // 不做处理，等待用户操作
+            // Multiple main keys, invalid combination
+            // Do nothing, wait for user action
           }
         }
       }
-      // 其他页面的 ESC 处理
+      // ESC handler for other pages
       else if (key === 'escape') {
         event.preventDefault();
         if (currentPage === 'main') {
@@ -1659,7 +1703,7 @@
           showPage('config');
         }
       }
-      // 主页面快捷键执行
+      // Execute shortcut on main page
       else if (currentPage === 'main') {
         const shortcut = getShortcutFromEvent(event);
         executeShortcut(shortcut);
@@ -1667,7 +1711,7 @@
     }
 
     /**
-     * 处理按键松开
+     * Handle keyup
      */
     function handleKeyUp(event) {
       const code = event.code;
@@ -1676,8 +1720,9 @@
         return;
       }
 
+      // On keyup
       if (isListening) {
-        // 忽略第一个keyup（command点击触发时）
+        // Ignore first keyup (when triggered by command click)
         if (ignoreFirstKeyUp) {
           ignoreFirstKeyUp = false;
           console.log('Ignored first keyup:', code);
@@ -1687,7 +1732,7 @@
         event.preventDefault();
         console.log('KeyUp:', code, 'metaKey:', event.metaKey, 'currentlyPressed before:', Array.from(currentlyPressed));
 
-        // 从当前按下的集合中移除键
+        // Remove key from currently pressed set
         currentlyPressed.delete(code);
         if (!event.metaKey) currentlyPressed.delete('cmd');
         if (!event.ctrlKey) currentlyPressed.delete('ctrl');
@@ -1696,11 +1741,11 @@
 
         console.log('currentlyPressed after:', Array.from(currentlyPressed));
 
-        // 检查是否需要清理状态或退出监听
+        // Check if need to clear state or exit listening
         if (currentlyPressed.size === 0) {
           console.log('All keys released, checking exit condition. pressedCodes:', Array.from(pressedCodes), 'shortcutSaved:', shortcutSaved);
           if (currentlyPressed.size === 0 && isListening) {
-            // 检查是否只按过修饰键
+            // Check if only modifier keys were pressed
             const allPressedCodes = Array.from(pressedCodes);
             const modifierKeys = ['cmd', 'ctrl', 'alt', 'shift'];
             const hasOnlyModifiers = allPressedCodes.length > 0 && allPressedCodes.every(k => modifierKeys.includes(k));
@@ -1708,19 +1753,19 @@
             console.log('hasOnlyModifiers:', hasOnlyModifiers, 'shortcutSaved:', shortcutSaved);
 
             if (hasOnlyModifiers && !shortcutSaved) {
-              // 只按过修饰键且未保存快捷键，清空并继续监听
+              // Only modifier keys were pressed and shortcut not saved, clear and keep listening
               console.log('Continue listening - only modifiers');
               pressedCodes.clear();
               updateListeningStatusBar();
             } else {
-              // 有主键、已保存快捷键或没按任何键，退出监听
+              // Has main key, shortcut saved, or no keys pressed, exit listening
               console.log('Exit listening - has main key or saved shortcut');
               stopSetShortcut();
             }
           }
         } else if (shortcutSaved) {
-          // 特殊情况：已保存快捷键但还有键显示为按下（可能是 keyup 事件丢失）
-          // 检查当前实际的修饰键状态
+          // Special case: shortcut saved but some keys still pressed (maybe missed keyup)
+          // Check actual modifier key state
           const actualModifiers = [];
           if (event.metaKey) actualModifiers.push('cmd');
           if (event.ctrlKey) actualModifiers.push('ctrl');
@@ -1729,11 +1774,11 @@
 
           console.log('Checking for lost keyup events. actualModifiers:', actualModifiers, 'currentlyPressed:', Array.from(currentlyPressed));
 
-          // 如果实际修饰键状态显示没有键按下，但 currentlyPressed 不为空
+          // If actually no modifiers pressed but currentlyPressed is not empty
           if (actualModifiers.length === 0 && currentlyPressed.size > 0) {
             console.log('Detected lost keyup events, force clearing currentlyPressed');
             currentlyPressed.clear();
-            // 重新检查退出条件
+            // Re-check exit condition
             if (currentlyPressed.size === 0 && isListening) {
               console.log('Force exit after clearing lost keys');
               stopSetShortcut();
@@ -1744,7 +1789,7 @@
     }
 
     /**
-     * 更新监听状态下的状态栏显示
+     * Update status bar display in listening state
      */
     function updateListeningStatusBar() {
       if (!isListening) return;
@@ -1753,7 +1798,7 @@
       let keysDisplay = '';
 
       if (keys.length > 0) {
-        // 对键进行排序，修饰键在前，主键在后
+        // Sort keys: modifiers first, then main key
         const modifierOrder = ['cmd', 'ctrl', 'alt', 'shift'];
         const modifiers = keys.filter(k => modifierOrder.includes(k)).sort((a, b) => modifierOrder.indexOf(a) - modifierOrder.indexOf(b));
         const mainKeys = keys.filter(k => !modifierOrder.includes(k));
@@ -1771,14 +1816,14 @@
         updateStatusBar('listening-set', `Press keys to set shortcut<span class="dots-animation"></span>`, 'ESC to cancel • DELETE to remove', isFloat);
       }
 
-      // 确保在config页面和自定义页面时添加float样式
+      // add float style on config and custom pages
       if (isFloat) {
         statusBar.classList.add('float');
       }
     }
 
     /**
-     * 捕获快捷键
+     * Capture shortcut
      */
     function captureShortcut() {
       if (!isListening || !listeningActionId || pressedCodes.size === 0) return;
@@ -1788,14 +1833,14 @@
       const modifiers = keys.filter(k => modifierKeys.includes(k));
       const mainKeys = keys.filter(k => !modifierKeys.includes(k));
 
-      // 验证快捷键规则
+      // Validate shortcut rules
       if (mainKeys.length === 0) {
-        // 只有修饰键，无效
+        // Only modifier keys, invalid
         const actionName = getActionName(listeningActionId);
         const isFloat = currentPage === 'config' || currentPage === 'addCustom';
         updateStatusBar('listening-set', `Invalid shortcut`, 'Need at least one main key • ESC to cancel • DELETE to remove', isFloat);
 
-        // 确保在config页面和自定义页面时添加float样式
+        // Ensure float style on config and custom pages
         if (isFloat) {
           statusBar.classList.add('float');
         }
@@ -1804,12 +1849,12 @@
       }
 
       if (mainKeys.length > 1) {
-        // 多个主键，无效
+        // Multiple main keys, invalid
         const actionName = getActionName(listeningActionId);
         const isFloat = currentPage === 'config' || currentPage === 'addCustom';
         updateStatusBar('listening-set', `Invalid shortcut`, 'Only one main key allowed • ESC to cancel • DELETE to remove', isFloat);
 
-        // 确保在config页面和自定义页面时添加float样式
+        // Ensure float style on config and custom pages
         if (isFloat) {
           statusBar.classList.add('float');
         }
@@ -1817,22 +1862,22 @@
         return;
       }
 
-      // 构建快捷键字符串，修饰键在前，主键在后
+      // Build shortcut string: modifiers first, then main key
       const modifierOrder = ['cmd', 'ctrl', 'alt', 'shift'];
       const sortedModifiers = modifiers.sort((a, b) => modifierOrder.indexOf(a) - modifierOrder.indexOf(b));
       const shortcutKeys = [...sortedModifiers, ...mainKeys];
       const shortcut = shortcutKeys.join('+');
 
-      // 保存快捷键
+      // Save shortcut
       if (currentPage === 'addCustom') {
-        // 在自定义动作页面，只临时保存
+        // On custom action page, save temporarily
         tempShortcuts[listeningActionId] = shortcut;
       } else {
-        // 在其他页面，立即保存
+        // On other pages, save immediately
         shortcuts[listeningActionId] = shortcut;
         saveData();
-        
-        // 只在非自定义动作页面发送成功通知
+
+        // Only send success notification on non-custom action page
         const actionName = getActionName(listeningActionId);
         parent.postMessage({
           pluginMessage: {
@@ -1842,20 +1887,20 @@
         }, '*');
       }
 
-      // 更新UI - 只更新对应的快捷键按钮，不重新渲染整个列表
+      // Update UI - only update corresponding shortcut button, do not re-render entire list
       updateShortcutButton(listeningActionId);
 
-      // 标记已保存，但不立即停止监听
+      // Mark as saved, but do not stop listening immediately
       shortcutSaved = true;
     }
 
     /**
-     * 取消设置快捷键
+     * Cancel setting shortcut
      */
     function cancelSetShortcut() {
       if (!isListening) return;
 
-      // 清空所有按键和重置状态
+      // Clear all keys and reset state
       shortcutSaved = false;
       pressedCodes.clear();
       currentlyPressed.clear();
@@ -1864,7 +1909,7 @@
     }
 
     /**
-     * 删除快捷键
+     * Delete shortcut
      */
     function deleteShortcut() {
       if (!isListening || !listeningActionId) return;
@@ -1873,34 +1918,34 @@
       const actionName = getActionName(actionId);
 
       if (currentPage === 'addCustom') {
-        // 在自定义动作页面，删除临时快捷键
+        // On custom action page, delete temporary shortcut
         delete tempShortcuts[actionId];
       } else {
-        // 在其他页面，删除正式快捷键
+        // On other pages, delete official shortcut
         delete shortcuts[actionId];
         saveData();
       }
 
-      // 清空所有按键和重置状态
+      // Clear all keys and reset state
       shortcutSaved = false;
       pressedCodes.clear();
       currentlyPressed.clear();
 
-      // 更新UI
+      // Update UI
       if (currentPage === 'main') {
-        // 在主页面需要重新渲染整个列表，因为删除快捷键可能导致列表结构变化
+        // On main page, re-render entire list as deleting shortcut may affect list structure
         setTimeout(() => {
           renderShortcutsList();
         }, 20);
       } else {
-        // 在其他页面只更新对应的快捷键按钮
+        // On other pages, only update corresponding shortcut button
         updateShortcutButton(actionId);
       }
 
       const isFloat = currentPage === 'config' || currentPage === 'addCustom';
       updateStatusBar('listening-set', `Shortcut removed`, 'Shortcut removed successfully', isFloat);
 
-      // 确保在config页面和自定义页面时添加float样式
+      // Ensure float style on config and custom pages
       if (isFloat) {
         statusBar.classList.add('float');
       }
@@ -1911,7 +1956,7 @@
     }
 
     /**
-     * 从事件获取快捷键
+     * Get shortcut from event
      */
     function getShortcutFromEvent(event) {
       const keys = [];
@@ -1931,9 +1976,9 @@
     }
 
     /**
-     * 执行快捷键
+     * Execute shortcut
      */
-    function executeShortcut(shortcut) {
+    function executeShortcut(shortcut, closePlugin = true) {
       for (const [action, actionShortcut] of Object.entries(shortcuts)) {
         if (actionShortcut === shortcut) {
           updateStatusBar('wait-action', `Executing: ${getActionName(action)}`, '');
@@ -1941,7 +1986,8 @@
           parent.postMessage({
             pluginMessage: {
               type: 'shortcut-triggered',
-              action: action
+              action: action,
+              closePlugin: closePlugin
             }
           }, '*');
 
@@ -1954,7 +2000,7 @@
       }
     }
 
-    // ========== 数据管理 ==========
+    // ========== Data Management ==========
     function loadData() {
       parent.postMessage({
         pluginMessage: {
@@ -1973,7 +2019,7 @@
       }, '*');
     }
 
-    // ========== 自定义动作管理 ==========
+    // ========== Custom Action Management ==========
     function clearCustomForm() {
       document.getElementById('customActionName').value = '';
       document.getElementById('customActionFunction').value = '';
@@ -1991,14 +2037,14 @@
     }
 
     /**
-     * 更新指定动作的快捷键按钮显示
-     * @param {string} actionId - 动作 ID
+     * Update shortcut button display for specified action
+     * @param {string} actionId - Action ID
      */
     /**
-     * 更新单个快捷键按钮
+     * Update single shortcut button
      */
     function updateSingleShortcutButton(button, actionId) {
-      // 如果当前正在监听这个按钮，不要覆盖监听状态
+      // If currently listening to this button, do not override listening state
       if (isListening && listeningActionId === actionId) {
         return;
       }
@@ -2006,18 +2052,18 @@
       const currentShortcut = getShortcut(actionId);
       const hasShortcut = currentShortcut && currentShortcut.length > 0;
       const isMainPage = currentPage === 'main';
-      
-      // 更新按钮状态类
+
+      // Update button state class
       button.className = `shortcut-button ${hasShortcut ? 'state-set' : 'state-empty'} clickable ${isMainPage ? 'disabled' : ''}`;
-      
-      // 更新按钮文本
+
+      // Update button text
       const actionBtn = button.querySelector('.action-button');
       if (actionBtn) {
         actionBtn.textContent = 'Set Shortcut';
         actionBtn.classList.remove('listening');
       }
-      
-      // 更新按键显示
+
+      // Update key display
       const keyDisplay = button.querySelector('.key-display');
       if (keyDisplay) {
         if (hasShortcut) {
@@ -2029,11 +2075,11 @@
     }
 
     function updateShortcutButton(actionId) {
-      // 查找所有页面中对应的快捷键按钮
+      // Find all shortcut buttons for this action on all pages
       const buttons = document.querySelectorAll(`[data-action="${actionId}"] .shortcut-button`);
       buttons.forEach(button => updateSingleShortcutButton(button, actionId));
 
-      // 特别处理自定义动作页面中的快捷键按钮
+      // Special handling for shortcut button on custom action page
       if (currentPage === 'addCustom') {
         const customShortcutButton = document.querySelector('#customShortcutBtn .shortcut-button');
         if (customShortcutButton && customShortcutButton.dataset.action === actionId) {
@@ -2077,10 +2123,10 @@
         customActions.push(action);
       }
 
-      // 将临时快捷键保存到正式存储
+      // Save temporary shortcut to official storage
       if (tempShortcuts[actionId]) {
         shortcuts[actionId] = tempShortcuts[actionId];
-        delete tempShortcuts[actionId]; // 清理临时存储
+        delete tempShortcuts[actionId];
       }
 
       saveData();
@@ -2095,7 +2141,7 @@
 
       renderShortcutsList();
       currentEditingActionId = null;
-      clearTempShortcuts(); // 清理所有临时快捷键
+      clearTempShortcuts(); // Clear all temporary shortcuts
       showPage('config');
     }
 
@@ -2140,7 +2186,7 @@
           delete shortcuts[currentEditingActionId];
         }
 
-        // 清理临时快捷键
+        // Clear temporary shortcut
         if (tempShortcuts[currentEditingActionId]) {
           delete tempShortcuts[currentEditingActionId];
         }
@@ -2149,7 +2195,7 @@
         renderShortcutsList();
         renderConfigList();
         currentEditingActionId = null;
-        clearTempShortcuts(); // 清理所有临时快捷键
+        clearTempShortcuts(); // Clear all temporary shortcuts
         showPage('config');
       }
     }
@@ -2168,7 +2214,7 @@
 
     function testRunCustomAction() {
       const functionCode = document.getElementById('customActionFunction').value.trim();
-      
+
       if (!functionCode) {
         alert('Please enter function code first');
         return;
@@ -2188,7 +2234,7 @@
       }, '*');
     }
 
-    // ========== 搜索功能 ==========
+    // ========== 6. Config Page Related ==========
     function toggleSearch() {
       const tabsContent = document.querySelector('.tabs-content');
       const searchContent = document.querySelector('.search-content');
@@ -2216,7 +2262,6 @@
 
       const conflicts = detectShortcutConflicts();
 
-      // 过滤默认动作
       let defaultHtml = '';
       let foundResults = false;
 
@@ -2257,7 +2302,6 @@
         defaultHtml = '<div class="empty-search-state">No results</div>';
       }
 
-      // 过滤自定义动作
       let customHtml = '';
       customActions.forEach(action => {
         if (action.name.toLowerCase().includes(searchTerm)) {
@@ -2283,18 +2327,20 @@
       document.getElementById('customConfigList').innerHTML = customHtml;
     }
 
-    // ========== 事件监听器设置 ==========
+    // ========== 7. ActionItem Render Function ==========
+
+    // ========== 8. Custom Page Related ==========
     function setupEventListeners() {
-      // 页面导航
+      // Page navigation
       backBtn.addEventListener('click', () => showPage('main'));
       backToConfigBtn.addEventListener('click', () => {
-        clearTempShortcuts(); // 清理临时快捷键
-        clearCustomForm();    // 清理表单和编辑状态
+        clearTempShortcuts(); // Clear temporary shortcuts
+        clearCustomForm();    // Clear form and editing state
         showPage('config');
       });
       addCustomBtn.addEventListener('click', () => showPage('addCustom'));
 
-      // 标签切换
+      // Tab switching
       tabs.forEach(tab => {
         tab.addEventListener('click', () => {
           const tabName = tab.dataset.tab;
@@ -2302,50 +2348,73 @@
         });
       });
 
-      // 事件委托
       document.addEventListener('click', (e) => {
-        // 设置快捷键按钮点击
+        // Set shortcut button click
         if (e.target.closest('.shortcut-button')) {
           const button = e.target.closest('.shortcut-button');
           const actionId = button.dataset.action;
           startSetShortcut(actionId, false);
         }
-        // 配置按钮点击
+        // Configure button click
         else if (e.target.id === 'configureBtn') {
           showPage('config');
         }
-        // 快捷键卡片点击（主页面）
+        // Alt+Click on any shortcut-card to run action (no statusbar change)
+        else if (e.altKey && !e.metaKey && !e.ctrlKey && e.target.closest('.shortcut-card')) {
+          // Alt+Click runs action on both mainPage and configPage
+          const card = e.target.closest('.shortcut-card');
+          const actionId = card.dataset.action;
+          e.preventDefault();
+          console.log("run action")
+          parent.postMessage({
+            pluginMessage: {
+              type: 'shortcut-triggered',
+              action: actionId,
+              closePlugin: false
+            }
+          }, '*');
+          return;
+        }
+        // Shortcut card click (main page)
         else if (e.target.closest('.shortcut-card.clickable') && currentPage === 'main') {
           const card = e.target.closest('.shortcut-card');
           const actionId = card.dataset.action;
-
+          if (e.altKey && !e.metaKey && !e.ctrlKey) {
+            e.preventDefault();
+            parent.postMessage({
+              pluginMessage: {
+                type: 'shortcut-triggered',
+                action: actionId,
+                closePlugin: false
+              }
+            }, '*');
+            return;
+          }
           if (e.metaKey || e.ctrlKey) {
             e.preventDefault();
             startSetShortcut(actionId, true);
           } else {
             const actionName = getActionName(actionId);
             updateStatusBar('wait-action', `Executing: ${actionName}`, '');
-
             parent.postMessage({
               pluginMessage: {
                 type: 'shortcut-triggered',
                 action: actionId
               }
             }, '*');
-
             setTimeout(() => {
               updateStatusBar('wait-action', 'Capturing Keys<span class="dots-animation"></span>', 'Press shortcuts to run actions • ⌘+Click to configure');
             }, 1000);
           }
         }
-        // 命令点击（配置页面）
+        // Command click (config page)
         else if (e.target.closest('.shortcut-card') && (e.metaKey || e.ctrlKey)) {
           e.preventDefault();
           const card = e.target.closest('.shortcut-card');
           const actionId = card.dataset.action;
           startSetShortcut(actionId, true);
         }
-        // 自定义动作卡片点击（编辑）
+        // Custom action card click (edit)
         else if (e.target.closest('.shortcut-card.custom-action') &&
           !e.target.closest('.shortcut-button') &&
           currentPage === 'config') {
@@ -2355,12 +2424,12 @@
         }
       });
 
-      // 搜索功能
+      // Search functionality
       document.getElementById('searchBtn').addEventListener('click', toggleSearch);
       document.getElementById('closeSearchBtn').addEventListener('click', toggleSearch);
       document.getElementById('searchInput').addEventListener('input', handleSearchInput);
 
-      // 表单输入焦点
+      // Form input focus
       document.getElementById('searchInput').addEventListener('click', (e) => {
         e.stopPropagation();
         e.target.focus();
@@ -2374,12 +2443,12 @@
         }
       });
 
-      // 自定义动作表单
+      // Custom action form
       document.getElementById('saveCustomBtn').addEventListener('click', () => saveCustomAction(false));
       document.getElementById('saveCustomBtnGroup').addEventListener('click', () => saveCustomAction(true));
       document.getElementById('cancelCustomBtn').addEventListener('click', () => {
-        clearTempShortcuts(); // 清理临时快捷键
-        clearCustomForm();    // 清理表单和编辑状态
+        clearTempShortcuts(); // Clear temporary shortcuts
+        clearCustomForm();    // Clear form and editing state
         showPage('config');
       });
       document.getElementById('testRunBtn').addEventListener('click', testRunCustomAction);
@@ -2394,11 +2463,11 @@
         e.target.focus();
       });
 
-      // 键盘事件
+      // Keyboard events
       document.addEventListener('keydown', handleKeyDown);
       document.addEventListener('keyup', handleKeyUp);
 
-      // 焦点管理
+      // Focus management
       document.addEventListener('click', (e) => {
         const searchContent = document.querySelector('.search-content');
         if (
@@ -2423,7 +2492,7 @@
         }, 10);
       });
 
-      // 提示框功能
+      // Tooltip functionality
       let tooltip = null;
       let tooltipTimeout = null;
 
@@ -2486,7 +2555,7 @@
       document.addEventListener('click', hideTooltip);
       document.addEventListener('keydown', hideTooltip);
 
-      // 更多操作下拉菜单
+      // More actions dropdown menu
       const moreActionsBtn = document.getElementById('moreActionsBtn');
       const moreActionsDropdown = document.getElementById('moreActionsDropdown');
       let dropdownOpen = false;
@@ -2530,24 +2599,34 @@
       });
     }
 
-    // ========== 初始化 ==========
+    // ========== 9. Footer Page Related ==========
+
+    // ========== 10. Help Info Popup ==========
+
+    // ========== Initialization ==========
     function init() {
       detectPlatform();
       loadData();
       setupEventListeners();
       focusable.focus();
+      // Initialize footerInfo text
+      setFooterInfoText('⌘+Click to set shortcut • ⌥+Click to run action');
     }
 
-    // ========== 消息处理 ==========
+    // ========== Message Handling ==========
     window.addEventListener('message', (event) => {
       if (event.data.pluginMessage) {
         const msg = event.data.pluginMessage;
         if (msg.type === 'shortcut-result') {
           if (currentPage === 'main') {
-            updateStatusBar('wait-action', msg.message, '');
+            if (msg.success) {
+              updateStatusBar('notify', msg.message, '');
+            } else {
+              updateStatusBar('warning', msg.message, '');
+            }
             setTimeout(() => {
               updateStatusBar('wait-action', 'Capturing Keys<span class="dots-animation"></span>', 'Press shortcuts to run actions • ⌘+Click to configure');
-            }, 1000);
+            }, 2000);
           }
         } else if (msg.type === 'data-loaded') {
           shortcuts = msg.shortcuts || {};
@@ -2560,7 +2639,83 @@
       }
     });
 
-    // 启动应用
+    // ========== footerInfo show/hide and text ==========
+    function showFooterInfo() {
+      if (isListening) return; // Do not show when listening for shortcut
+      if (footerInfoContainer) footerInfoContainer.classList.remove('hidden');
+    }
+    function hideFooterInfo() {
+      if (footerInfoContainer) footerInfoContainer.classList.add('hidden');
+    }
+    function setFooterInfoText(text) {
+      if (footerInfo) footerInfo.innerHTML = `<p>${text}</p>`;
+    }
+    // ========== command/alt key listening ==========
+    document.addEventListener('keydown', function (e) {
+      // Only effective on main/config page
+      if (currentPage !== 'main' && currentPage !== 'config') return;
+      if (isListening) { hideFooterInfo(); return; }
+      let needShow = false;
+      if (e.metaKey && !isCmdDown) {
+        isCmdDown = true;
+        needShow = true;
+      }
+      if ((currentPage === 'config' || currentPage === 'main') && e.altKey && !isAltDown) {
+        isAltDown = true;
+        needShow = true;
+      }
+      if (needShow) showFooterInfo();
+    });
+    document.addEventListener('keyup', function (e) {
+      // Only effective on main/config page
+      if (currentPage !== 'main' && currentPage !== 'config') return;
+      if (isListening) { hideFooterInfo(); return; }
+      // Check if command/alt is released
+      if (!e.metaKey && isCmdDown) {
+        isCmdDown = false;
+        // On config, don't hide if alt is still pressed
+        if (!((currentPage === 'config' || currentPage === 'main') && isAltDown)) hideFooterInfo();
+      }
+      if ((currentPage === 'config' || currentPage === 'main') && !e.altKey && isAltDown) {
+        isAltDown = false;
+        // Don't hide if cmd is still pressed
+        if (!isCmdDown) hideFooterInfo();
+      }
+    });
+
+    // ========== Resize plugin window ==========
+    const corner = document.getElementById("corner");
+    function resizeWindow(e) {
+      const size = {
+        w: Math.max(50, Math.floor(e.clientX + 5)),
+        h: Math.max(50, Math.floor(e.clientY + 5)),
+      };
+      parent.postMessage(
+        { pluginMessage: { type: "resize", size: size } },
+        "*"
+      );
+    }
+    corner.onpointerdown = (e) => {
+      corner.onpointermove = resizeWindow;
+      corner.setPointerCapture(e.pointerId);
+    };
+    corner.onpointerup = (e) => {
+      corner.onpointermove = null;
+      corner.releasePointerCapture(e.pointerId);
+    };
+    corner.addEventListener("dblclick", (e) => {
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "resize",
+            size: { w: 320, h: 10000 },
+          },
+        },
+        "*"
+      );
+    });
+
+    // Start the app
     init();
   </script>
 </body>

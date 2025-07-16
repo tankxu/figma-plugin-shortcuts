@@ -14,6 +14,11 @@ interface PluginMessage {
   functionCode?: string;
   message?: string;
   update?: boolean;
+  closePlugin?: boolean;
+  size?: {
+    w: number;
+    h: number;
+  };
 }
 
 /* === 1. NEW defaultActions ============================================ */
@@ -711,51 +716,33 @@ function createComponentForEach() {
 
 function convertInstanceToComponent() {
   const selection = figma.currentPage.selection;
-  if (selection.length === 0) return;
-  
   const newComponents: ComponentNode[] = [];
-  
-  selection.forEach(node => {
-    // Check if the node is an instance
+
+  for (const node of selection) {
+    // 跳过已是主组件或变体组
+    if (node.type === 'COMPONENT' || node.type === 'COMPONENT_SET') continue;
+
+    let source: SceneNode;
+    let originalName = node.name;
+
     if (node.type === 'INSTANCE') {
-      // Store the parent and index position for layer order
-      const parent = node.parent;
-      const originalIndex = parent ? parent.children.indexOf(node) : -1;
-      
-      // Detach the instance to convert it to a frame
-      const detachedFrame = node.detachInstance();
-      
-      // Create a new component
-      const component = figma.createComponent();
-      
-      // Copy properties from the detached frame
-      component.resize(detachedFrame.width, detachedFrame.height);
-      component.x = detachedFrame.x;
-      component.y = detachedFrame.y;
-      component.name = detachedFrame.name;
-      
-      // Move all children from the detached frame to the component
-      while (detachedFrame.children.length > 0) {
-        const child = detachedFrame.children[0];
-        component.appendChild(child);
-      }
-      
-      // Remove the empty detached frame
-      detachedFrame.remove();
-      
-      // Insert the component at the original position in the layer list
-      if (parent && originalIndex !== -1) {
-        parent.insertChild(originalIndex, component);
-      }
-      
-      newComponents.push(component);
+      // detachInstance 后原 node 立即失效，必须提前保存 name
+      source = node.detachInstance();
+      source.name = originalName;
     } else {
-      // If it's not an instance, skip it or notify user
-      figma.notify(`${node.name} is not an instance, skipping`);
+      source = node;
     }
-  });
-  
-  // Select all new components
+
+    try {
+      // 只要支持 createComponentFromNode 的都能创建
+      const comp = figma.createComponentFromNode(source);
+      comp.name = originalName;
+      newComponents.push(comp);
+    } catch (e) {
+      // 某些节点类型不能转成 component，比如部分特殊 node，可静默跳过
+    }
+  }
+
   if (newComponents.length > 0) {
     figma.currentPage.selection = newComponents;
   }
@@ -796,6 +783,40 @@ function resetInstance() {
 /* ---------- End components implementations ---------- */
 /* ====================================================================== */
 
+// Load all fonts used in the selection (including rich text)
+async function loadFonts(selection: readonly SceneNode[] = figma.currentPage.selection) {
+  // Collect all unique fonts from selection
+  const fonts: FontName[] = [];
+  selection.forEach(node => {
+    if (node.type === 'TEXT') {
+      // Handle simple fontName
+      if (typeof node.fontName === 'object' && 'family' in node.fontName) {
+        const font = node.fontName as FontName;
+        if (!fonts.some(f => f.family === font.family && f.style === font.style)) {
+          fonts.push(font);
+        }
+      }
+      // Handle rich text (multiple font ranges)
+      if ('getRangeFontName' in node) {
+        for (let i = 0; i < node.characters.length; i++) {
+          try {
+            const font = node.getRangeFontName(i, i + 1) as FontName;
+            if (!fonts.some(f => f.family === font.family && f.style === font.style)) {
+              fonts.push(font);
+            }
+          } catch (e) {
+            // Ignore ranges without font
+          }
+        }
+      }
+    }
+  });
+  // Load all collected fonts
+  for (const font of fonts) {
+    await figma.loadFontAsync(font);
+  }
+}
+
 // Get action name from default actions
 async function getActionName(action: string) {
   // Search through all categories to find the action
@@ -822,16 +843,77 @@ async function getActionName(action: string) {
   return action; // Return the action ID if not found
 }
 
+// Run custom function code with security checks and error handling
+async function runCustomFunction(functionCode: string, actionName: string) {
+  // Backend security check - prevent postMessage attacks
+  if (functionCode.includes('postMessage')) {
+    return {
+      success: false,
+      message: `Security violation: postMessage is not allowed in custom actions`
+    };
+  }
+  try {
+    const customFunction = new Function(
+      'figma',
+      'selection',
+      'loadFonts',
+      `
+    return (async () => {
+      try {
+        ${functionCode}
+      } catch (error) {
+        throw new Error('Custom action execution failed: ' + error.message);
+      }
+    })();
+  `
+    );
+    const result = await customFunction(figma, figma.currentPage.selection, loadFonts);
+    return {
+      success: true,
+      message: `Executed custom action: ${actionName}`
+    };
+  } catch (executionError) {
+    console.error('Error executing custom action:', executionError);
+    const errorMessage = executionError instanceof Error ? executionError.message : 'Unknown execution error';
+    return {
+      success: false,
+      message: `Error executing custom action "${actionName}": ${errorMessage}`
+    };
+  }
+}
+
+// Execute custom action function by actionId
+async function executeCustomAction(actionId: string) {
+  try {
+    // Get custom actions from storage
+    const customActions = await figma.clientStorage.getAsync('customActions') || [];
+    const customAction = customActions.find((action: any) => action.id === actionId);
+    if (!customAction) {
+      return { success: false, message: `Custom action not found: ${actionId}` };
+    }
+    // Use the shared runner
+    return await runCustomFunction(customAction.function, customAction.name);
+  } catch (error) {
+    console.error('Error loading custom action:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return {
+      success: false,
+      message: `Error loading custom action: ${errorMessage}`
+    };
+  }
+}
+
+// Execute custom action code directly (for test runs)
+async function executeCustomActionCode(functionCode: string) {
+  // Use the shared runner, actionName is for test run
+  return await runCustomFunction(functionCode, 'Test run');
+}
+
 // Execute action function
 async function executeAction(action: string) {
   const selection = figma.currentPage.selection;
-
-  // let processedCount = 0;
-  // let errorCount = 0;
-
   try {
     switch (action) {
-      /* === 3. NEW switch‑cases in executeAction ============================= */
       case 'alignLeft':
         alignLeft(); break;
       case 'alignHorizontalCenter':
@@ -918,7 +1000,6 @@ async function executeAction(action: string) {
         detachInstance(); break;
       case 'resetInstance':
         resetInstance(); break;
-      /* ====================================================================== */
       case 'fullWidth':
         fullWidth(); break;
       case 'fullHeight':
@@ -1004,116 +1085,6 @@ async function executeAction(action: string) {
   };
 }
 
-// Execute custom action function
-async function executeCustomAction(actionId: string) {
-  try {
-    // Get custom actions from storage
-    const customActions = await figma.clientStorage.getAsync('customActions') || [];
-    const customAction = customActions.find((action: any) => action.id === actionId);
-    
-    if (!customAction) {
-      return { success: false, message: `Custom action not found: ${actionId}` };
-    }
-
-    // Create a safe execution environment
-    const functionCode = customAction.function;
-    const actionName = customAction.name;
-    
-    // Backend security check - prevent postMessage attacks
-    if (functionCode.includes('postMessage')) {
-      return { 
-        success: false, 
-        message: `Security violation: postMessage is not allowed in custom actions` 
-      };
-    }
-    
-    try {
-      // Create a function from the code with proper context
-      const customFunction = new Function(
-        'figma', 
-        'selection', 
-        `
-        try {
-          ${functionCode}
-        } catch (error) {
-          throw new Error('Custom action execution failed: ' + error.message);
-        }
-      `);
-      
-      // Execute the custom function
-      const result = customFunction(figma, figma.currentPage.selection);
-      
-      return {
-        success: true,
-        message: `Executed custom action: ${actionName}`
-      };
-    } catch (executionError) {
-      console.error('Error executing custom action:', executionError);
-      const errorMessage = executionError instanceof Error ? executionError.message : 'Unknown execution error';
-      return { 
-        success: false, 
-        message: `Error executing custom action "${actionName}": ${errorMessage}` 
-      };
-    }
-  } catch (error) {
-    console.error('Error loading custom action:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return { 
-      success: false, 
-      message: `Error loading custom action: ${errorMessage}` 
-    };
-  }
-}
-
-// Execute custom action code directly (for test runs)
-async function executeCustomActionCode(functionCode: string) {
-  try {
-    // Backend security check - prevent postMessage attacks
-    if (functionCode.includes('postMessage')) {
-      return { 
-        success: false, 
-        message: `Security violation: postMessage is not allowed in custom actions` 
-      };
-    }
-    
-    try {
-      // Create a function from the code with proper context
-      const customFunction = new Function(
-        'figma', 
-        'selection', 
-        `
-        try {
-          ${functionCode}
-        } catch (error) {
-          throw new Error('Custom action execution failed: ' + error.message);
-        }
-      `);
-      
-      // Execute the custom function
-      const result = customFunction(figma, figma.currentPage.selection);
-      
-      return {
-        success: true,
-        message: `Test run completed successfully`
-      };
-    } catch (executionError) {
-      console.error('Error executing custom action code:', executionError);
-      const errorMessage = executionError instanceof Error ? executionError.message : 'Unknown execution error';
-      return { 
-        success: false, 
-        message: `Test run failed: ${errorMessage}` 
-      };
-    }
-  } catch (error) {
-    console.error('Error in test run:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return { 
-      success: false, 
-      message: `Test run error: ${errorMessage}` 
-    };
-  }
-}
-
 // Common UI setup and message handling
 function setupUI() {
   // Show the UI
@@ -1163,6 +1134,8 @@ function setupUI() {
     if (msg.type === 'shortcut-triggered') {
       // Handle shortcut commands
       const action = msg.action;
+      const closePlugin = msg.closePlugin === undefined ? true : msg.closePlugin;
+      console.log('closePlugin', closePlugin)
 
       if (action) {
         // Execute the action
@@ -1187,7 +1160,7 @@ function setupUI() {
         figma.notify(result.message);
 
         // Close plugin after successful execution
-        if (result.success) {
+        if (result.success && closePlugin === true) {
           figma.closePlugin();
         }
         return;
@@ -1259,6 +1232,13 @@ function setupUI() {
         figma.notify(msg.message);
       }
       return;
+    }
+    
+    if (msg.type === "resize") {
+      const size = msg.size || { w: 320, h: 450 };
+      if (size.w < 320) size.w = 320;
+      if (size.h < 320) size.h = 320;
+      figma.ui.resize(size.w, size.h);
     }
   };
 }
