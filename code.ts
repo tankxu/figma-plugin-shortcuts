@@ -11,6 +11,9 @@ interface PluginMessage {
   customActions?: any;
   count?: number;
   actionName?: string;
+  functionCode?: string;
+  message?: string;
+  update?: boolean;
 }
 
 /* === 1. NEW defaultActions ============================================ */
@@ -74,6 +77,13 @@ const defaultActions = {
     textAlignCenter: 'Text Align Center',
     textAlignRight: 'Text Align Right',
     textAlignJustify: 'Text Align Justify'
+  },
+  Components: {
+    createComponent: 'Create Component',
+    createComponentForEach: 'Create Component For Each',
+    convertInstanceToComponent: 'Convert Instance to Component',
+    detachInstance: 'Detach Instance',
+    resetInstance: 'Reset Instance'
   },
   Positioning: {
     absolute: 'Set Absolute Position',
@@ -622,7 +632,168 @@ function flattenSelection() {
   if (figma.currentPage.selection.length >= 2)
     figma.flatten(figma.currentPage.selection);
 }
-/* ---------- End additional implementations ---------- */
+/* ------ components ------ */
+function createComponent() {
+  const selection = figma.currentPage.selection;
+  if (selection.length === 0) return;
+  
+  if (selection.length === 1) {
+    // Single selection - create component from it
+    const node = selection[0];
+    const component = figma.createComponent();
+    
+    // Copy properties from the original node
+    component.resize(node.width, node.height);
+    component.x = node.x;
+    component.y = node.y;
+    
+    // Move the original node into the component
+    node.x = 0;
+    node.y = 0;
+    component.appendChild(node);
+    
+    // Select the new component
+    figma.currentPage.selection = [component];
+  } else {
+    // Multiple selection - group them first, then create component
+    const group = figma.group(selection, selection[0].parent!);
+    const component = figma.createComponent();
+    
+    // Copy properties from the group
+    component.resize(group.width, group.height);
+    component.x = group.x;
+    component.y = group.y;
+    
+    // Move all children from group to component
+    while (group.children.length > 0) {
+      const child = group.children[0];
+      component.appendChild(child);
+    }
+    
+    // Remove the empty group
+    group.remove();
+    
+    // Select the new component
+    figma.currentPage.selection = [component];
+  }
+}
+
+function createComponentForEach() {
+  const selection = figma.currentPage.selection;
+  if (selection.length === 0) return;
+  
+  const newComponents: ComponentNode[] = [];
+  
+  selection.forEach(node => {
+    const component = figma.createComponent();
+    
+    // Copy properties from the original node
+    component.resize(node.width, node.height);
+    component.x = node.x;
+    component.y = node.y;
+    component.name = node.name;
+    
+    // Clone the node and add to component
+    const clonedNode = node.clone();
+    clonedNode.x = 0;
+    clonedNode.y = 0;
+    component.appendChild(clonedNode);
+    
+    // Remove the original node
+    node.remove();
+    
+    newComponents.push(component);
+  });
+  
+  // Select all new components
+  figma.currentPage.selection = newComponents;
+}
+
+function convertInstanceToComponent() {
+  const selection = figma.currentPage.selection;
+  if (selection.length === 0) return;
+  
+  const newComponents: ComponentNode[] = [];
+  
+  selection.forEach(node => {
+    // Check if the node is an instance
+    if (node.type === 'INSTANCE') {
+      // Store the parent and index position for layer order
+      const parent = node.parent;
+      const originalIndex = parent ? parent.children.indexOf(node) : -1;
+      
+      // Detach the instance to convert it to a frame
+      const detachedFrame = node.detachInstance();
+      
+      // Create a new component
+      const component = figma.createComponent();
+      
+      // Copy properties from the detached frame
+      component.resize(detachedFrame.width, detachedFrame.height);
+      component.x = detachedFrame.x;
+      component.y = detachedFrame.y;
+      component.name = detachedFrame.name;
+      
+      // Move all children from the detached frame to the component
+      while (detachedFrame.children.length > 0) {
+        const child = detachedFrame.children[0];
+        component.appendChild(child);
+      }
+      
+      // Remove the empty detached frame
+      detachedFrame.remove();
+      
+      // Insert the component at the original position in the layer list
+      if (parent && originalIndex !== -1) {
+        parent.insertChild(originalIndex, component);
+      }
+      
+      newComponents.push(component);
+    } else {
+      // If it's not an instance, skip it or notify user
+      figma.notify(`${node.name} is not an instance, skipping`);
+    }
+  });
+  
+  // Select all new components
+  if (newComponents.length > 0) {
+    figma.currentPage.selection = newComponents;
+  }
+}
+
+function detachInstance() {
+  const selection = figma.currentPage.selection;
+  if (selection.length === 0) return;
+  
+  const detachedNodes: SceneNode[] = [];
+  
+  selection.forEach(node => {
+    safeNodeAccess(node, ['detachInstance'], (instanceNode) => {
+      if (instanceNode.type === 'INSTANCE') {
+        const detached = instanceNode.detachInstance();
+        detachedNodes.push(detached);
+      }
+    });
+  });
+  
+  if (detachedNodes.length > 0) {
+    figma.currentPage.selection = detachedNodes;
+  }
+}
+
+function resetInstance() {
+  const selection = figma.currentPage.selection;
+  if (selection.length === 0) return;
+  
+  selection.forEach(node => {
+    safeNodeAccess(node, ['resetOverrides'], (instanceNode) => {
+      if (instanceNode.type === 'INSTANCE') {
+        instanceNode.resetOverrides();
+      }
+    });
+  });
+}
+/* ---------- End components implementations ---------- */
 /* ====================================================================== */
 
 // Get action name from default actions
@@ -737,6 +908,16 @@ async function executeAction(action: string) {
         outlineStroke(); break;
       case 'flattenSelection':
         flattenSelection(); break;
+      case 'createComponent':
+        createComponent(); break;
+      case 'createComponentForEach':
+        createComponentForEach(); break;
+      case 'convertInstanceToComponent':
+        convertInstanceToComponent(); break;
+      case 'detachInstance':
+        detachInstance(); break;
+      case 'resetInstance':
+        resetInstance(); break;
       /* ====================================================================== */
       case 'fullWidth':
         fullWidth(); break;
@@ -884,6 +1065,55 @@ async function executeCustomAction(actionId: string) {
   }
 }
 
+// Execute custom action code directly (for test runs)
+async function executeCustomActionCode(functionCode: string) {
+  try {
+    // Backend security check - prevent postMessage attacks
+    if (functionCode.includes('postMessage')) {
+      return { 
+        success: false, 
+        message: `Security violation: postMessage is not allowed in custom actions` 
+      };
+    }
+    
+    try {
+      // Create a function from the code with proper context
+      const customFunction = new Function(
+        'figma', 
+        'selection', 
+        `
+        try {
+          ${functionCode}
+        } catch (error) {
+          throw new Error('Custom action execution failed: ' + error.message);
+        }
+      `);
+      
+      // Execute the custom function
+      const result = customFunction(figma, figma.currentPage.selection);
+      
+      return {
+        success: true,
+        message: `Test run completed successfully`
+      };
+    } catch (executionError) {
+      console.error('Error executing custom action code:', executionError);
+      const errorMessage = executionError instanceof Error ? executionError.message : 'Unknown execution error';
+      return { 
+        success: false, 
+        message: `Test run failed: ${errorMessage}` 
+      };
+    }
+  } catch (error) {
+    console.error('Error in test run:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { 
+      success: false, 
+      message: `Test run error: ${errorMessage}` 
+    };
+  }
+}
+
 // Common UI setup and message handling
 function setupUI() {
   // Show the UI
@@ -967,12 +1197,47 @@ function setupUI() {
     if (msg.type === 'custom-action-added') {
       // Handle custom action
       const customAction = msg.action;
+      const update = msg.update;
 
       if (customAction && typeof customAction === 'object' && customAction !== null && 'name' in customAction) {
         // For now, just acknowledge the custom action
-        figma.notify(`Custom action "${(customAction as any).name}" added`);
+        figma.notify(`Custom action "${(customAction as any).name}" ${update ? 'updated' : 'added'}`);
       } else {
-        figma.notify('Custom action added');
+        figma.notify(`Custom action ${update ? 'updated' : 'added'}`);
+      }
+      return;
+    }
+
+    if (msg.type === 'test-run-custom-action') {
+      // Handle test run custom action
+      const functionCode = msg.functionCode;
+      
+      if (!functionCode) {
+        figma.ui.postMessage({
+          type: 'test-run-result',
+          success: false,
+          message: 'No function code provided'
+        });
+        return;
+      }
+
+      try {
+        const result = await executeCustomActionCode(functionCode);
+        figma.ui.postMessage({
+          type: 'test-run-result',
+          success: result.success,
+          message: result.message
+        });
+        
+        figma.notify(result.message);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        figma.ui.postMessage({
+          type: 'test-run-result',
+          success: false,
+          message: errorMessage
+        });
+        figma.notify(errorMessage);
       }
       return;
     }
@@ -986,6 +1251,13 @@ function setupUI() {
 
     if (msg.type === 'cancel') {
       figma.closePlugin();
+      return;
+    }
+
+    if (msg.type === 'notify') {
+      if (msg.message) {
+        figma.notify(msg.message);
+      }
       return;
     }
   };
